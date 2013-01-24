@@ -34,10 +34,16 @@
 #include <time.h>
 #include <unistd.h>
 
+#define DEBUG 0
+
 #define str(arg) #arg
 #define to_str(arg) str(arg)
 
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
+
+#define xmalloc(size)       malloc_wrap(size,       __FILE__, __LINE__)
+#define xrealloc(ptr, size) realloc_wrap(ptr, size, __FILE__, __LINE__)
+#define xstrdup(str)        strdup_wrap(str,        __FILE__, __LINE__)
 
 #if !defined BUF_SIZE || BUF_SIZE <= 0
 # undef BUF_SIZE
@@ -56,6 +62,18 @@
 #define RELEASE_VAR(ptr) do {                             \
     release_var (vars_list, stacked_vars, (void **)&ptr); \
 } while (false);
+
+#if DEBUG
+# define MEM_ALLOC_FAIL(file, line) do {                                                    \
+    fprintf (stderr, "memory allocation failure in source file %s, line %d\n", file, line); \
+    exit (2);                                                                               \
+} while (false);
+#else
+# define MEM_ALLOC_FAIL(file, line) do {                               \
+    fprintf (stderr, "%s: memory allocation failure\n", program_name); \
+    exit (2);                                                          \
+} while (false);
+#endif
 
 #define ABORT_TRACE()                                                              \
     fprintf (stderr, "aborting in source file %s, line %d\n", __FILE__, __LINE__); \
@@ -166,7 +184,9 @@ static void read_print_stream (bool, const struct color **, const char *, FILE *
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const char *const, unsigned int, const struct color **);
 static void print_line (const struct color **, bool, const char * const, unsigned int);
-static char *xstrdup (const char *);
+static void *malloc_wrap (size_t, const char *, unsigned int);
+static void *realloc_wrap (void *, size_t, const char *, unsigned int);
+static char *strdup_wrap (const char *, const char *, unsigned int);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
@@ -436,7 +456,7 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
               }
           }
 
-        color_names[index] = malloc (sizeof (struct color_name));
+        color_names[index] = xmalloc (sizeof (struct color_name));
 
         color_names[index]->orig = xstrdup (color);
 
@@ -667,12 +687,31 @@ print_line (const struct color **colors, bool bold, const char *const line, unsi
       putchar ('\n');
 }
 
+static void *
+malloc_wrap (size_t size, const char *file, unsigned int line)
+{
+    void *p = malloc (size);
+    if (!p)
+      MEM_ALLOC_FAIL (file, line);
+    return p;
+}
+
+static void *
+realloc_wrap (void *ptr, size_t size, const char *file, unsigned int line)
+{
+    void *p = realloc (ptr, size);
+    if (!p)
+      MEM_ALLOC_FAIL (file, line);
+    return p;
+}
+
 static char *
-xstrdup (const char *str)
+strdup_wrap (const char *str, const char *file, unsigned int line)
 {
     const unsigned int len = strlen (str) + 1;
     char *p = malloc (len);
-    assert (p != NULL);
+    if (!p)
+      MEM_ALLOC_FAIL (file, line);
     strncpy (p, str, len);
     return p;
 }
@@ -696,7 +735,7 @@ stack_var (void ***list, unsigned int *stacked, unsigned int index, void *ptr)
     if (ptr == NULL)
       return;
     if (!*list)
-      *list = malloc (sizeof (void *));
+      *list = xmalloc (sizeof (void *));
     else
       {
         unsigned int i;
@@ -706,7 +745,7 @@ stack_var (void ***list, unsigned int *stacked, unsigned int index, void *ptr)
               (*list)[i] = ptr;
               return; /* reused */
             }
-        *list = realloc (*list, (*stacked + 1) * sizeof (void *));
+        *list = xrealloc (*list, (*stacked + 1) * sizeof (void *));
       }
     (*list)[index] = ptr;
     (*stacked)++;
