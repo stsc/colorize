@@ -5,7 +5,7 @@
 
 SHELL=/bin/sh
 CC=gcc
-CFLAGS=-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused
+CFLAGS=-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-parameter
 
 colorize:	colorize.o
 			$(CC) -o $@ $<

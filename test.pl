@@ -9,7 +9,7 @@ use Test::More tests => 9;
 
 my $BUF_SIZE = 1024;
 my $source = 'colorize.c';
-my $warning_flags = '-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused';
+my $warning_flags = '-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-parameter';
 
 my $write_to_tmpfile = sub
 {
