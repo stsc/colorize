@@ -65,7 +65,7 @@
 
 #if DEBUG
 # define MEM_ALLOC_FAIL(file, line) do {                                                    \
-    fprintf (stderr, "memory allocation failure in source file %s, line %d\n", file, line); \
+    fprintf (stderr, "Memory allocation failure in source file %s, line %d\n", file, line); \
     exit (2);                                                                               \
 } while (false);
 #else
@@ -76,7 +76,7 @@
 #endif
 
 #define ABORT_TRACE()                                                              \
-    fprintf (stderr, "aborting in source file %s, line %d\n", __FILE__, __LINE__); \
+    fprintf (stderr, "Aborting in source file %s, line %d\n", __FILE__, __LINE__); \
     abort ();                                                                      \
 
 #define CHECK_COLORS_RANDOM(color1, color2)        \
