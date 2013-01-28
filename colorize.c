@@ -403,7 +403,12 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
         have_file = (*color != '\0');
 
         if (have_file)
-          vfprintf_fail (formats[FMT_GENERIC], "file must be preceeded by color string");
+          {
+            if (file_string)
+              vfprintf_fail (formats[FMT_GENERIC], "file cannot be used as color string");
+            else
+              vfprintf_fail (formats[FMT_GENERIC], "file must be preceeded by color string");
+          }
       }
 
     if ((p = strchr (color_string, '/')))
