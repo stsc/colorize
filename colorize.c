@@ -43,6 +43,7 @@
 
 #define xmalloc(size)       malloc_wrap(size,       __FILE__, __LINE__)
 #define xrealloc(ptr, size) realloc_wrap(ptr, size, __FILE__, __LINE__)
+#define free_null(ptr)      free_wrap((void **)&ptr                   )
 #define xstrdup(str)        strdup_wrap(str,        __FILE__, __LINE__)
 
 #if !defined BUF_SIZE || BUF_SIZE <= 0
@@ -171,6 +172,7 @@ static FILE *stream = NULL;
 static unsigned int stacked_vars = 0;
 static void **vars_list = NULL;
 
+static bool clean = false;
 static char *exclude = NULL;
 
 static const char *program_name;
@@ -180,13 +182,18 @@ static void print_version (void);
 static void cleanup (void);
 static void free_color_names (struct color_name **);
 static void process_options (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
+static void process_file_option (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *, enum stream_mode);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const char *const, unsigned int, const struct color **);
 static void print_line (const struct color **, bool, const char * const, unsigned int);
+static void print_clean (const char *);
+static void print_free_offsets (const char *, char ***, unsigned int);
 static void *malloc_wrap (size_t, const char *, unsigned int);
 static void *realloc_wrap (void *, size_t, const char *, unsigned int);
+static void free_wrap (void **);
 static char *strdup_wrap (const char *, const char *, unsigned int);
+static char *str_concat (const char *, const char *);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
@@ -199,10 +206,9 @@ main (int argc, char **argv)
 {
     unsigned int arg_cnt = 0;
 
-    bool invalid_opt = false;
-
     int opt;
     struct option long_opts[] = {
+        { "clean",          no_argument,       NULL, 'c' },
         { "exclude-random", required_argument, NULL, 'e' },
         { "help",           no_argument,       NULL, 'h' },
         { "version",        no_argument,       NULL, 'v' },
@@ -229,6 +235,9 @@ main (int argc, char **argv)
       {
         switch (opt)
           {
+            case 'c':
+              clean = true;
+              break;
             case 'e': {
               char *p;
               exclude = xstrdup (optarg);
@@ -246,8 +255,8 @@ main (int argc, char **argv)
               print_version ();
               exit (EXIT_SUCCESS);
             case '?':
-              invalid_opt = true;
-              break;
+              print_help ();
+              exit (EXIT_FAILURE);
             default: /* never reached */
               ABORT_TRACE ();
           }
@@ -255,13 +264,24 @@ main (int argc, char **argv)
 
     arg_cnt = argc - optind;
 
-    if (arg_cnt == 0 || arg_cnt > 2 || invalid_opt)
+    if (clean)
       {
-        print_help ();
-        exit (EXIT_FAILURE);
+        if (arg_cnt > 1)
+          vfprintf_fail (formats[FMT_GENERIC], "--clean switch cannot be used with more than one file");
+      }
+    else
+      {
+        if (arg_cnt == 0 || arg_cnt > 2)
+          {
+            print_help ();
+            exit (EXIT_FAILURE);
+          }
       }
 
-    process_options (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
+    if (clean)
+      process_file_option (argv[optind], &file, &stream);
+    else
+      process_options (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
     read_print_stream (bold, colors, file, stream, mode);
 
     RELEASE_VAR (exclude);
@@ -274,7 +294,7 @@ print_help (void)
 {
     unsigned int i;
 
-    printf ("Usage: %s (foreground) OR (foreground)/(background) [-|file]\n\n", program_name);
+    printf ("Usage: %s (foreground) OR (foreground)/(background) OR --clean [-|file]\n\n", program_name);
     printf ("\tColors (foreground) (background)\n");
     for (i = 0; i < tables[FOREGROUND].count; i++)
       {
@@ -293,6 +313,8 @@ print_help (void)
     printf ("\twhereas for lower case colors will be of normal intensity.\n");
 
     printf ("\n\tOptions\n");
+    printf ("\t\t    --clean\n");
+    printf ("\t\t    --exclude-random\n");
     printf ("\t\t-h, --help\n");
     printf ("\t\t-v, --version\n\n");
 }
@@ -324,12 +346,8 @@ cleanup (void)
         unsigned int i;
         for (i = 0; i < stacked_vars; i++)
           if (vars_list[i])
-            {
-              free (vars_list[i]);
-              vars_list[i] = NULL;
-            }
-        free (vars_list);
-        vars_list = NULL;
+            free_null (vars_list[i]);
+        free_null (vars_list);
       }
 }
 
@@ -339,12 +357,9 @@ free_color_names (struct color_name **color_names)
     unsigned int i;
     for (i = 0; color_names[i]; i++)
       {
-        free (color_names[i]->name);
-        color_names[i]->name = NULL;
-        free (color_names[i]->orig);
-        color_names[i]->orig = NULL;
-        free (color_names[i]);
-        color_names[i] = NULL;
+        free_null (color_names[i]->name);
+        free_null (color_names[i]->orig);
+        free_null (color_names[i]);
       }
 }
 
@@ -494,6 +509,12 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
     if (!colors[FOREGROUND]->code && colors[BACKGROUND] && colors[BACKGROUND]->code)
       find_color_entry ("default", FOREGROUND, colors);
 
+    process_file_option (file_string, file, stream);
+}
+
+static void
+process_file_option (const char *file_string, const char **file, FILE **stream)
+{
     if (file_string)
       {
         if (streq (file_string, "-"))
@@ -532,10 +553,21 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
     assert (*stream);
 }
 
+#define MERGE_PRINT_LINE(part_line, line, flags) do {                   \
+    char *merged_line = NULL;                                           \
+    if (part_line)                                                      \
+      {                                                                 \
+        merged_line = str_concat (part_line, line);                     \
+        free_null (part_line);                                          \
+      }                                                                 \
+    print_line (colors, bold, merged_line ? merged_line : line, flags); \
+    free (merged_line);                                                 \
+} while (false);
+
 static void
 read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream, enum stream_mode mode)
 {
-    char buf[BUF_SIZE];
+    char buf[BUF_SIZE], *part_line = NULL;
     unsigned int flags = 0;
     bool first = false, always = false;
 
@@ -602,10 +634,25 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
                 p = eol + SKIP_LINE_ENDINGS (flags);
               }
             *eol = '\0';
-            print_line (colors, bold, line, flags);
+            MERGE_PRINT_LINE (part_line, line, flags);
             line = p;
           }
-        print_line (colors, bold, line, 0);
+        if (feof (stream)) {
+          MERGE_PRINT_LINE (part_line, line, 0);
+        }
+        else
+          {
+            if (!clean) /* efficiency */
+              print_line (colors, bold, line, 0);
+            else if (!part_line)
+              part_line = xstrdup (line);
+            else
+              {
+                char *merged_line = str_concat (part_line, line);
+                free (part_line);
+                part_line = merged_line;
+              }
+          }
       }
 }
 
@@ -680,16 +727,130 @@ find_color_entry (const char *const color_name, unsigned int index, const struct
 static void
 print_line (const struct color **colors, bool bold, const char *const line, unsigned int flags)
 {
-    if (colors[BACKGROUND] && colors[BACKGROUND]->code)
-      printf ("\033[%s", colors[BACKGROUND]->code);
-    if (colors[FOREGROUND]->code)
-      printf ("\033[%s%s%s\033[0m", bold ? "1;" : "", colors[FOREGROUND]->code, line);
+    /* --clean */
+    if (clean)
+      print_clean (line);
     else
-      printf (formats[FMT_GENERIC], line);
+      {
+        if (colors[BACKGROUND] && colors[BACKGROUND]->code)
+          printf ("\033[%s", colors[BACKGROUND]->code);
+        if (colors[FOREGROUND]->code)
+          printf ("\033[%s%s%s\033[0m", bold ? "1;" : "", colors[FOREGROUND]->code, line);
+        else
+          printf (formats[FMT_GENERIC], line);
+      }
     if (flags & CR)
       putchar ('\r');
     if (flags & LF)
       putchar ('\n');
+}
+
+static void
+print_clean (const char *line)
+{
+    const char *p;
+    char ***offsets = NULL;
+    unsigned int count = 0, i = 0;
+
+    for (p = line; *p; p++)
+      {
+        /* ESC[ */
+        if (*p == 27 && *(p + 1) == '[')
+          {
+            bool check_values, first = true;
+            const char *begin = p;
+            p += 2;
+            if (!isdigit (*p))
+              goto END;
+            do {
+              const char *digit;
+              check_values = false;
+              if (!first && !isdigit (*p))
+                goto DISCARD;
+              digit = p;
+              while (isdigit (*p))
+                p++;
+              if (p - digit > 2)
+                goto DISCARD;
+              else /* check range */
+                {
+                  char val[3];
+                  int value;
+                  unsigned int i;
+                  const unsigned int digits = p - digit;
+                  for (i = 0; i < digits; i++)
+                    val[i] = *digit++;
+                  val[i] = '\0';
+                  value = atoi (val);
+                  if (!((value >=  0 && value <=  8)   /* attributes        */
+                     || (value >= 30 && value <= 37)   /* foreground colors */
+                     || (value >= 40 && value <= 47)   /* background colors */
+                     || (value == 39 || value == 49))) /* default colors    */
+                    goto DISCARD;
+                }
+              if (*p == ';')
+                {
+                  p++;
+                  check_values = true;
+                }
+              first = false;
+            } while (check_values);
+            END: if (*p == 'm')
+              {
+                const char *end = p;
+                if (!offsets)
+                  offsets = xmalloc (++count * sizeof (char **));
+                else
+                  offsets = xrealloc (offsets, ++count * sizeof (char **));
+                offsets[i] = xmalloc (2 * sizeof (char *));
+                offsets[i][0] = (char *)begin; /* ESC */
+                offsets[i][1] = (char *)end;   /* m */
+                i++;
+              }
+            DISCARD:
+              continue;
+          }
+      }
+
+    if (offsets)
+      print_free_offsets (line, offsets, count);
+    else
+      printf (formats[FMT_GENERIC], line);
+}
+
+#define SET_CHAR(offset, new, old) \
+    *old = *offset;                \
+    *offset = new;                 \
+
+#define RESTORE_CHAR(offset, old)  \
+    *offset = old;                 \
+
+static void
+print_free_offsets (const char *line, char ***offsets, unsigned int count)
+{
+    char ch;
+    unsigned int i;
+
+    SET_CHAR (offsets[0][0], '\0', &ch);
+    printf (formats[FMT_GENERIC], line);
+    RESTORE_CHAR (offsets[0][0], ch);
+
+    for (i = 0; i < count; i++)
+      {
+        char ch;
+        bool next_offset = false;
+        if (i + 1 < count)
+          {
+            SET_CHAR (offsets[i + 1][0], '\0', &ch);
+            next_offset = true;
+          }
+        printf (formats[FMT_GENERIC], offsets[i][1] + 1);
+        if (next_offset)
+          RESTORE_CHAR (offsets[i + 1][0], ch);
+      }
+    for (i = 0; i < count; i++)
+      free_null (offsets[i]);
+    free_null (offsets);
 }
 
 static void *
@@ -710,6 +871,13 @@ realloc_wrap (void *ptr, size_t size, const char *file, unsigned int line)
     return p;
 }
 
+static void
+free_wrap (void **ptr)
+{
+    free (*ptr);
+    *ptr = NULL;
+}
+
 static char *
 strdup_wrap (const char *str, const char *file, unsigned int line)
 {
@@ -719,6 +887,22 @@ strdup_wrap (const char *str, const char *file, unsigned int line)
       MEM_ALLOC_FAIL (file, line);
     strncpy (p, str, len);
     return p;
+}
+
+static char *
+str_concat (const char *str1, const char *str2)
+{
+    const unsigned long len = strlen (str1) + strlen (str2) + 1;
+    char *p, *str;
+
+    p = str = xmalloc (len);
+    strncpy (p, str1, strlen (str1));
+    p += strlen (str1);
+    strncpy (p, str2, strlen (str2));
+    p += strlen (str2);
+    *p = '\0';
+
+    return str;
 }
 
 static void
