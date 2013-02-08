@@ -752,7 +752,7 @@ print_clean (const char *line)
     char ***offsets = NULL;
     unsigned int count = 0, i = 0;
 
-    for (p = line; *p; p++)
+    for (p = line; *p;)
       {
         /* ESC[ */
         if (*p == 27 && *(p + 1) == '[')
@@ -810,6 +810,7 @@ print_clean (const char *line)
             DISCARD:
               continue;
           }
+        p++;
       }
 
     if (offsets)
