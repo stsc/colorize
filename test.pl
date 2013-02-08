@@ -5,9 +5,14 @@ use warnings;
 use constant true => 1;
 
 use File::Temp qw(tempfile tmpnam);
-use Test::More tests => 9;
+use Test::More;
 
-my $BUF_SIZE = 1024;
+my $tests = 14;
+
+my %BUF_SIZE = (
+   normal => 1024,
+   short  => 10,
+);
 my $source = 'colorize.c';
 my $warning_flags = '-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-parameter';
 
@@ -22,14 +27,15 @@ my $write_to_tmpfile = sub
     return $tmpfile;
 };
 
-my $program;
+my ($program, $program_buf);
+
+plan tests => $tests;
 
 SKIP: {
-    skip "$source does not exist", 9 unless -e $source;
+    skip "$source does not exist", $tests unless -e $source;
 
     $program = tmpnam();
-
-    skip 'compiling failed', 9 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE $warning_flags -o $program $source") == 0;
+    skip 'compiling failed (normal)', $tests unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{normal} $warning_flags -o $program $source") == 0;
 
     is(system("$program --help >/dev/null 2>&1"), 0, 'exit value for help screen');
 
@@ -43,10 +49,25 @@ SKIP: {
     is_deeply([split /\n/, qx(cat $infile1 | $program none/none)], [split /\n/, $text], 'text read from stdin');
     is_deeply([split /\n/, qx($program none/none $infile1)],       [split /\n/, $text], 'text read from file');
 
+    is(qx(echo -n "\e[35mhello\e[0m \e[36mworld\e[0m" | $program --clean),       'hello world', 'clean colored words');
+    is(qx(echo -n "hello world" | $program Magenta | $program --clean),          'hello world', 'clean colored line');
+    is_deeply([split /\n/, qx($program cyan $infile1 | $program --clean)], [split /\n/, $text], 'clean colored text');
+
+    ok(qx(echo -n "\e[\e[33m" | $program --clean) eq "\e[", 'clean with invalid sequence');
+
+    SKIP: {
+        $program_buf = tmpnam();
+        skip 'compiling failed (short buffer)', 1 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{short} $warning_flags -o $program_buf $source") == 0;
+
+        # Check that line chunks are merged when cleaning text
+        my $short_text = 'Linux dev 2.6.32-5-openvz-686 #1 SMP Sun Sep 23 11:40:07 UTC 2012 i686 GNU/Linux';
+        is(qx(echo -n "$short_text" | $program_buf --clean), $short_text, "merge ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short})");
+    }
+
     my $repeated = join "\n", ($text) x 7;
     my $infile2  = $write_to_tmpfile->($repeated);
 
-    is_deeply([split /\n/, qx(cat $infile2 | $program none/none)], [split /\n/, $repeated], "read ${\length $repeated} bytes (BUF_SIZE=$BUF_SIZE)");
+    is_deeply([split /\n/, qx(cat $infile2 | $program none/none)], [split /\n/, $repeated], "read ${\length $repeated} bytes (BUF_SIZE=$BUF_SIZE{normal})");
 
     is(qx(echo -n "hello\nworld\r\n" | $program none/none), "hello\nworld\r\n", 'stream mode');
 
@@ -67,7 +88,9 @@ EOT
     }
 };
 
-unlink $program if defined $program;
+foreach ($program, $program_buf) {
+    unlink $_ if defined $_;
+}
 
 __DATA__
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus urna mauris, ultricies faucibus placerat sit amet, rutrum eu
