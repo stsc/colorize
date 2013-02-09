@@ -14,7 +14,7 @@ my %BUF_SIZE = (
    short  => 10,
 );
 my $source = 'colorize.c';
-my $warning_flags = '-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-parameter';
+my $warning_flags = '-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter';
 
 my $write_to_tmpfile = sub
 {

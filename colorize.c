@@ -41,10 +41,16 @@
 
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
 
-#define xmalloc(size)       malloc_wrap(size,       __FILE__, __LINE__)
-#define xrealloc(ptr, size) realloc_wrap(ptr, size, __FILE__, __LINE__)
-#define free_null(ptr)      free_wrap((void **)&ptr                   )
-#define xstrdup(str)        strdup_wrap(str,        __FILE__, __LINE__)
+#if DEBUG
+# define xmalloc(size)       malloc_wrap_debug(size,       __FILE__, __LINE__)
+# define xrealloc(ptr, size) realloc_wrap_debug(ptr, size, __FILE__, __LINE__)
+#else
+# define xmalloc(size)       malloc_wrap(size)
+# define xrealloc(ptr, size) realloc_wrap(ptr, size)
+#endif
+
+#define free_null(ptr) free_wrap((void **)&ptr)
+#define xstrdup(str)   strdup_wrap(str)
 
 #if !defined BUF_SIZE || BUF_SIZE <= 0
 # undef BUF_SIZE
@@ -64,17 +70,14 @@
     release_var (vars_list, stacked_vars, (void **)&ptr); \
 } while (false);
 
-#if DEBUG
-# define MEM_ALLOC_FAIL(file, line) do {                                                    \
+#define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                               \
     fprintf (stderr, "Memory allocation failure in source file %s, line %d\n", file, line); \
     exit (2);                                                                               \
 } while (false);
-#else
-# define MEM_ALLOC_FAIL(file, line) do {                               \
+#define MEM_ALLOC_FAIL() do {                                          \
     fprintf (stderr, "%s: memory allocation failure\n", program_name); \
     exit (2);                                                          \
 } while (false);
-#endif
 
 #define ABORT_TRACE()                                                              \
     fprintf (stderr, "Aborting in source file %s, line %d\n", __FILE__, __LINE__); \
@@ -189,10 +192,12 @@ static void find_color_entry (const char *const, unsigned int, const struct colo
 static void print_line (const struct color **, bool, const char * const, unsigned int);
 static void print_clean (const char *);
 static void print_free_offsets (const char *, char ***, unsigned int);
-static void *malloc_wrap (size_t, const char *, unsigned int);
-static void *realloc_wrap (void *, size_t, const char *, unsigned int);
+static void *malloc_wrap (size_t);
+static void *realloc_wrap (void *, size_t);
+static void *malloc_wrap_debug (size_t, const char *, unsigned int);
+static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
-static char *strdup_wrap (const char *, const char *, unsigned int);
+static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
@@ -855,20 +860,38 @@ print_free_offsets (const char *line, char ***offsets, unsigned int count)
 }
 
 static void *
-malloc_wrap (size_t size, const char *file, unsigned int line)
+malloc_wrap (size_t size)
 {
     void *p = malloc (size);
     if (!p)
-      MEM_ALLOC_FAIL (file, line);
+      MEM_ALLOC_FAIL ();
     return p;
 }
 
 static void *
-realloc_wrap (void *ptr, size_t size, const char *file, unsigned int line)
+realloc_wrap (void *ptr, size_t size)
 {
     void *p = realloc (ptr, size);
     if (!p)
-      MEM_ALLOC_FAIL (file, line);
+      MEM_ALLOC_FAIL ();
+    return p;
+}
+
+static void *
+malloc_wrap_debug (size_t size, const char *file, unsigned int line)
+{
+    void *p = malloc (size);
+    if (!p)
+      MEM_ALLOC_FAIL_DEBUG (file, line);
+    return p;
+}
+
+static void *
+realloc_wrap_debug (void *ptr, size_t size, const char *file, unsigned int line)
+{
+    void *p = realloc (ptr, size);
+    if (!p)
+      MEM_ALLOC_FAIL_DEBUG (file, line);
     return p;
 }
 
@@ -880,12 +903,10 @@ free_wrap (void **ptr)
 }
 
 static char *
-strdup_wrap (const char *str, const char *file, unsigned int line)
+strdup_wrap (const char *str)
 {
     const unsigned int len = strlen (str) + 1;
-    char *p = malloc (len);
-    if (!p)
-      MEM_ALLOC_FAIL (file, line);
+    char *p = xmalloc (len);
     strncpy (p, str, len);
     return p;
 }
