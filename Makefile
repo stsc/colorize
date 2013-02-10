@@ -7,14 +7,11 @@ SHELL=/bin/sh
 CC=gcc
 CFLAGS=-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter
 
-colorize:	colorize.o
-			$(CC) -o $@ $<
-
-colorize.o:	colorize.c
-			$(CC) $(CFLAGS) -c $< -DCFLAGS="$(CFLAGS)"
+colorize:	colorize.c
+			$(CC) $(CFLAGS) -o $@ $< -DCFLAGS="$(CFLAGS)"
 
 check:
 			perl ./test.pl
 
 clean:
-			[ -e colorize.o ] && rm colorize.o; exit 0
+			[ -e colorize ] && rm colorize; exit 0
