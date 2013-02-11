@@ -802,7 +802,7 @@ print_clean (const char *line)
             } while (check_values);
             END: if (*p == 'm')
               {
-                const char *end = p;
+                const char *end = p++;
                 if (!offsets)
                   offsets = xmalloc (++count * sizeof (char **));
                 else
@@ -811,6 +811,7 @@ print_clean (const char *line)
                 offsets[i][0] = (char *)begin; /* ESC */
                 offsets[i][1] = (char *)end;   /* m */
                 i++;
+                continue;
               }
             DISCARD:
               continue;
