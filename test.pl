@@ -73,8 +73,10 @@ SKIP: {
 
     is(system("echo \"hello world\" | $program random --exclude-random=black >/dev/null 2>&1"), 0, 'switch exclude-random');
 
-    skip 'valgrind not found', 1 unless system('which valgrind >/dev/null 2>&1') == 0;
-    like(qx(valgrind $program none/none $infile1 2>&1 >/dev/null), qr/no leaks are possible/, 'valgrind memleaks');
+    SKIP: {
+        skip 'valgrind not found', 1 unless system('which valgrind >/dev/null 2>&1') == 0;
+        like(qx(valgrind $program none/none $infile1 2>&1 >/dev/null), qr/no leaks are possible/, 'valgrind memleaks');
+    }
 
     print <<'EOT';
 Colors
