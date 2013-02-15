@@ -27,14 +27,12 @@ my $write_to_tmpfile = sub
     return $tmpfile;
 };
 
-my ($program, $program_buf);
-
 plan tests => $tests;
 
 SKIP: {
     skip "$source does not exist", $tests unless -e $source;
 
-    $program = tmpnam();
+    my $program = tmpnam();
     skip 'compiling failed (normal)', $tests unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{normal} $warning_flags -o $program $source") == 0;
 
     is(system("$program --help >/dev/null 2>&1"), 0, 'exit value for help screen');
@@ -56,12 +54,14 @@ SKIP: {
     ok(qx(echo -n "\e[\e[33m" | $program --clean) eq "\e[", 'clean with invalid sequence');
 
     SKIP: {
-        $program_buf = tmpnam();
+        my $program_buf = tmpnam();
         skip 'compiling failed (short buffer)', 1 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{short} $warning_flags -o $program_buf $source") == 0;
 
         # Check that line chunks are merged when cleaning text
         my $short_text = 'Linux dev 2.6.32-5-openvz-686 #1 SMP Sun Sep 23 11:40:07 UTC 2012 i686 GNU/Linux';
         is(qx(echo -n "$short_text" | $program_buf --clean), $short_text, "merge ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short})");
+
+        unlink $program_buf;
     }
 
     my $repeated = join "\n", ($text) x 7;
@@ -86,11 +86,9 @@ EOT
         my $bold_color = ucfirst $color;
         system("echo $bold_color | $program $bold_color");
     }
-};
 
-foreach ($program, $program_buf) {
-    unlink $_ if defined $_;
-}
+    unlink $program;
+};
 
 __DATA__
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus urna mauris, ultricies faucibus placerat sit amet, rutrum eu
