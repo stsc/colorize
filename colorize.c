@@ -88,7 +88,7 @@
  && (streq (color_names[color2]->name, "none")     \
   || streq (color_names[color2]->name, "default")) \
 
-#define VERSION "0.48"
+#define VERSION "0.49"
 
 typedef unsigned short bool;
 
