@@ -906,7 +906,7 @@ free_wrap (void **ptr)
 static char *
 strdup_wrap (const char *str)
 {
-    const unsigned int len = strlen (str) + 1;
+    const size_t len = strlen (str) + 1;
     char *p = xmalloc (len);
     strncpy (p, str, len);
     return p;
@@ -915,7 +915,7 @@ strdup_wrap (const char *str)
 static char *
 str_concat (const char *str1, const char *str2)
 {
-    const unsigned long len = strlen (str1) + strlen (str2) + 1;
+    const size_t len = strlen (str1) + strlen (str2) + 1;
     char *p, *str;
 
     p = str = xmalloc (len);
