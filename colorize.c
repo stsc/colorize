@@ -71,7 +71,7 @@
 } while (false);
 
 #define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                               \
-    fprintf (stderr, "Memory allocation failure in source file %s, line %d\n", file, line); \
+    fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
     exit (2);                                                                               \
 } while (false);
 #define MEM_ALLOC_FAIL() do {                                          \
@@ -80,7 +80,7 @@
 } while (false);
 
 #define ABORT_TRACE()                                                              \
-    fprintf (stderr, "Aborting in source file %s, line %d\n", __FILE__, __LINE__); \
+    fprintf (stderr, "Aborting in source file %s, line %u\n", __FILE__, __LINE__); \
     abort ();                                                                      \
 
 #define CHECK_COLORS_RANDOM(color1, color2)        \
@@ -142,7 +142,7 @@ static const char *formats[] = {
     "%s",                    /* generic */
     "%s color '%s' %s",      /* color   */
     "%s color '%s' %s '%s'", /* random  */
-    "less than %d bytes %s", /* error   */
+    "less than %u bytes %s", /* error   */
     "%s: %s",                /* file    */
 };
 
@@ -335,7 +335,7 @@ print_version (void)
     c_flags = "unknown";
 #endif
     printf ("Compiler flags: %s\n", c_flags);
-    printf ("Buffer size: %d bytes\n", BUF_SIZE - 1);
+    printf ("Buffer size: %u bytes\n", BUF_SIZE - 1);
 }
 
 static void
