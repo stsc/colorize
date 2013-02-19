@@ -301,7 +301,7 @@ print_help (void)
 {
     unsigned int i;
 
-    printf ("Usage: %s (foreground) OR (foreground)/(background) OR --clean [-|file]\n\n", program_name);
+    printf ("Usage: %s (foreground) OR (foreground)%c(background) OR --clean [-|file]\n\n", program_name, COLOR_SEP_CHAR);
     printf ("\tColors (foreground) (background)\n");
     for (i = 0; i < tables[FOREGROUND].count; i++)
       {
