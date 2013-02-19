@@ -88,6 +88,8 @@
  && (streq (color_names[color2]->name, "none")     \
   || streq (color_names[color2]->name, "default")) \
 
+#define COLOR_SEP_CHAR '/'
+
 #define VERSION "0.49"
 
 typedef unsigned short bool;
@@ -414,7 +416,7 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
                     break;
                   }
               }
-            if (matched && *color == '/' && *(color + 1))
+            if (matched && *color == COLOR_SEP_CHAR && *(color + 1))
               color++;
             else
               break;
@@ -431,13 +433,13 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
           }
       }
 
-    if ((p = strchr (color_string, '/')))
+    if ((p = strchr (color_string, COLOR_SEP_CHAR)))
       {
         if (p == color_string)
           vfprintf_fail (formats[FMT_GENERIC], "foreground color missing");
         else if (p == color_string + strlen (color_string) - 1)
           vfprintf_fail (formats[FMT_GENERIC], "background color missing");
-        else if (strchr (++p, '/'))
+        else if (strchr (++p, COLOR_SEP_CHAR))
           vfprintf_fail (formats[FMT_GENERIC], "one color pair allowed only");
       }
 
@@ -447,7 +449,7 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
     for (index = 0, color = str; *color; index++, color = p)
       {
         char *ch, *sep;
-        if ((sep = strchr (color, '/')))
+        if ((sep = strchr (color, COLOR_SEP_CHAR)))
           {
             *sep = '\0';
             p = sep + 1;
