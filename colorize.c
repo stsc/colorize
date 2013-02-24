@@ -354,6 +354,7 @@ cleanup (void)
         for (i = 0; i < stacked_vars; i++)
           if (vars_list[i])
             free_null (vars_list[i]);
+
         free_null (vars_list);
       }
 }
