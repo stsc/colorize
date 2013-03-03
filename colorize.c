@@ -561,15 +561,17 @@ process_file_option (const char *file_string, const char **file, FILE **stream)
     assert (*stream);
 }
 
-#define MERGE_PRINT_LINE(part_line, line, flags) do {                   \
-    char *merged_line = NULL;                                           \
-    if (part_line)                                                      \
-      {                                                                 \
-        merged_line = str_concat (part_line, line);                     \
-        free_null (part_line);                                          \
-      }                                                                 \
-    print_line (colors, bold, merged_line ? merged_line : line, flags); \
-    free (merged_line);                                                 \
+#define MERGE_PRINT_LINE(part_line, line, flags, check_eof) do { \
+    char *current_line, *merged_line = NULL;                     \
+    if (part_line)                                               \
+      {                                                          \
+        merged_line = str_concat (part_line, line);              \
+        free_null (part_line);                                   \
+      }                                                          \
+    current_line = merged_line ? merged_line : (char *)line;     \
+    if (!check_eof || *current_line != '\0')                     \
+      print_line (colors, bold, current_line, flags);            \
+    free (merged_line);                                          \
 } while (false);
 
 static void
@@ -642,11 +644,11 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
                 p = eol + SKIP_LINE_ENDINGS (flags);
               }
             *eol = '\0';
-            MERGE_PRINT_LINE (part_line, line, flags);
+            MERGE_PRINT_LINE (part_line, line, flags, false);
             line = p;
           }
         if (feof (stream)) {
-          MERGE_PRINT_LINE (part_line, line, 0);
+          MERGE_PRINT_LINE (part_line, line, 0, true);
         }
         else
           {
