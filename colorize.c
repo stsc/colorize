@@ -213,13 +213,20 @@ main (int argc, char **argv)
 {
     unsigned int arg_cnt = 0;
 
-    int opt;
+    enum {
+        OPT_CLEAN = 1,
+        OPT_EXCLUDE_RANDOM,
+        OPT_HELP,
+        OPT_VERSION
+    };
+
+    int opt, opt_type = 0;
     struct option long_opts[] = {
-        { "clean",          no_argument,       NULL, 'c' },
-        { "exclude-random", required_argument, NULL, 'e' },
-        { "help",           no_argument,       NULL, 'h' },
-        { "version",        no_argument,       NULL, 'v' },
-        {  0,               0,                 0,     0  },
+        { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
+        { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
+        { "help",           no_argument,       &opt_type, OPT_HELP           },
+        { "version",        no_argument,       &opt_type, OPT_VERSION        },
+        {  0,               0,                 0,         0                  },
     };
 
     bool bold = false;
@@ -240,27 +247,43 @@ main (int argc, char **argv)
 
     while ((opt = getopt_long (argc, argv, "hv", long_opts, NULL)) != -1)
       {
+        PARSE_OPT:
         switch (opt)
           {
-            case 'c':
-              clean = true;
+            case 0: /* long opts */
+              switch (opt_type)
+                {
+                  case OPT_CLEAN:
+                    clean = true;
+                    break;
+                  case OPT_EXCLUDE_RANDOM: {
+                    char *p;
+                    exclude = xstrdup (optarg);
+                    STACK_VAR (exclude);
+                    for (p = exclude; *p; p++)
+                      *p = tolower (*p);
+                    if (streq (exclude, "random"))
+                      vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a color");
+                    break;
+                  }
+                  case OPT_HELP:
+                    print_help ();
+                    exit (EXIT_SUCCESS);
+                  case OPT_VERSION:
+                    print_version ();
+                    exit (EXIT_SUCCESS);
+                  default: /* never reached */
+                    ABORT_TRACE ();
+                }
               break;
-            case 'e': {
-              char *p;
-              exclude = xstrdup (optarg);
-              STACK_VAR (exclude);
-              for (p = exclude; *p; p++)
-                *p = tolower (*p);
-              if (streq (exclude, "random"))
-                vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a color");
-              break;
-            }
             case 'h':
-              print_help ();
-              exit (EXIT_SUCCESS);
+              opt_type = OPT_HELP;
+              opt = 0;
+              goto PARSE_OPT;
             case 'v':
-              print_version ();
-              exit (EXIT_SUCCESS);
+              opt_type = OPT_VERSION;
+              opt = 0;
+              goto PARSE_OPT;
             case '?':
               print_help ();
               exit (EXIT_FAILURE);
