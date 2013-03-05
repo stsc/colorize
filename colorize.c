@@ -205,6 +205,11 @@ static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
 
+#define SET_OPT_TYPE(type) \
+    opt_type = type;       \
+    opt = 0;               \
+    goto PARSE_OPT;        \
+
 extern char *optarg;
 extern int optind;
 
@@ -277,13 +282,9 @@ main (int argc, char **argv)
                 }
               break;
             case 'h':
-              opt_type = OPT_HELP;
-              opt = 0;
-              goto PARSE_OPT;
+              SET_OPT_TYPE (OPT_HELP);
             case 'v':
-              opt_type = OPT_VERSION;
-              opt = 0;
-              goto PARSE_OPT;
+              SET_OPT_TYPE (OPT_VERSION);
             case '?':
               print_help ();
               exit (EXIT_FAILURE);
