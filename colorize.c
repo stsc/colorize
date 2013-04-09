@@ -178,6 +178,8 @@ static unsigned int stacked_vars = 0;
 static void **vars_list = NULL;
 
 static bool clean = false;
+static bool clean_all = false;
+
 static char *exclude = NULL;
 
 static const char *program_name;
@@ -220,6 +222,7 @@ main (int argc, char **argv)
 
     enum {
         OPT_CLEAN = 1,
+        OPT_CLEAN_ALL,
         OPT_EXCLUDE_RANDOM,
         OPT_HELP,
         OPT_VERSION
@@ -228,6 +231,7 @@ main (int argc, char **argv)
     int opt, opt_type = 0;
     struct option long_opts[] = {
         { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
+        { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
         { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
         { "help",           no_argument,       &opt_type, OPT_HELP           },
         { "version",        no_argument,       &opt_type, OPT_VERSION        },
@@ -260,6 +264,9 @@ main (int argc, char **argv)
                 {
                   case OPT_CLEAN:
                     clean = true;
+                    break;
+                  case OPT_CLEAN_ALL:
+                    clean_all = true;
                     break;
                   case OPT_EXCLUDE_RANDOM: {
                     char *p;
@@ -295,10 +302,17 @@ main (int argc, char **argv)
 
     arg_cnt = argc - optind;
 
-    if (clean)
+    if (clean || clean_all)
       {
         if (arg_cnt > 1)
-          vfprintf_fail (formats[FMT_GENERIC], "--clean switch cannot be used with more than one file");
+          {
+            const char *format = "%s %s";
+            const char *message = "switch cannot be used with more than one file";
+            if (clean)
+              vfprintf_fail (format, "--clean", message);
+            else if (clean_all)
+              vfprintf_fail (format, "--clean-all", message);
+          }
       }
     else
       {
@@ -309,7 +323,7 @@ main (int argc, char **argv)
           }
       }
 
-    if (clean)
+    if (clean || clean_all)
       process_file_option (argv[optind], &file, &stream);
     else
       process_options (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
@@ -325,7 +339,7 @@ print_help (void)
 {
     unsigned int i;
 
-    printf ("Usage: %s (foreground) OR (foreground)%c(background) OR --clean [-|file]\n\n", program_name, COLOR_SEP_CHAR);
+    printf ("Usage: %s (foreground) OR (foreground)%c(background) OR --clean[-all] [-|file]\n\n", program_name, COLOR_SEP_CHAR);
     printf ("\tColors (foreground) (background)\n");
     for (i = 0; i < tables[FOREGROUND].count; i++)
       {
@@ -345,6 +359,7 @@ print_help (void)
 
     printf ("\n\tOptions\n");
     printf ("\t\t    --clean\n");
+    printf ("\t\t    --clean-all\n");
     printf ("\t\t    --exclude-random\n");
     printf ("\t\t-h, --help\n");
     printf ("\t\t-v, --version\n\n");
@@ -676,7 +691,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         }
         else
           {
-            if (!clean) /* efficiency */
+            if (!clean && !clean_all) /* efficiency */
               print_line (colors, bold, line, 0);
             else if (!part_line)
               part_line = xstrdup (line);
@@ -761,8 +776,8 @@ find_color_entry (const char *const color_name, unsigned int index, const struct
 static void
 print_line (const struct color **colors, bool bold, const char *const line, unsigned int flags)
 {
-    /* --clean */
-    if (clean)
+    /* --clean[-all] */
+    if (clean || clean_all)
       print_clean (line);
     else
       {
@@ -791,44 +806,52 @@ print_clean (const char *line)
         /* ESC[ */
         if (*p == 27 && *(p + 1) == '[')
           {
-            bool check_values, first = true;
             const char *begin = p;
             p += 2;
-            if (!isdigit (*p))
-              goto END;
-            do {
-              const char *digit;
-              check_values = false;
-              if (!first && !isdigit (*p))
-                goto DISCARD;
-              digit = p;
-              while (isdigit (*p))
-                p++;
-              if (p - digit > 2)
-                goto DISCARD;
-              else /* check range */
-                {
-                  char val[3];
-                  int value;
-                  unsigned int i;
-                  const unsigned int digits = p - digit;
-                  for (i = 0; i < digits; i++)
-                    val[i] = *digit++;
-                  val[i] = '\0';
-                  value = atoi (val);
-                  if (!((value >=  0 && value <=  8)   /* attributes        */
-                     || (value >= 30 && value <= 37)   /* foreground colors */
-                     || (value >= 40 && value <= 47)   /* background colors */
-                     || (value == 39 || value == 49))) /* default colors    */
-                    goto DISCARD;
-                }
-              if (*p == ';')
-                {
+            if (clean_all)
+              {
+                while (isdigit (*p) || *p == ';')
                   p++;
-                  check_values = true;
-                }
-              first = false;
-            } while (check_values);
+              }
+            else if (clean)
+              {
+                bool check_values, first = true;
+                if (!isdigit (*p))
+                  goto END;
+                do {
+                  const char *digit;
+                  check_values = false;
+                  if (!first && !isdigit (*p))
+                    goto DISCARD;
+                  digit = p;
+                  while (isdigit (*p))
+                    p++;
+                  if (p - digit > 2)
+                    goto DISCARD;
+                  else /* check range */
+                    {
+                      char val[3];
+                      int value;
+                      unsigned int i;
+                      const unsigned int digits = p - digit;
+                      for (i = 0; i < digits; i++)
+                        val[i] = *digit++;
+                      val[i] = '\0';
+                      value = atoi (val);
+                      if (!((value ==  0 || value ==  1)   /* attributes        */
+                         || (value >= 30 && value <= 37)   /* foreground colors */
+                         || (value >= 40 && value <= 47)   /* background colors */
+                         || (value == 39 || value == 49))) /* default colors    */
+                        goto DISCARD;
+                    }
+                  if (*p == ';')
+                    {
+                      p++;
+                      check_values = true;
+                    }
+                  first = false;
+                } while (check_values);
+              }
             END: if (*p == 'm')
               {
                 const char *end = p++;
