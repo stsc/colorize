@@ -90,7 +90,7 @@
 
 #define COLOR_SEP_CHAR '/'
 
-#define VERSION "0.49"
+#define VERSION "0.50"
 
 typedef unsigned short bool;
 
