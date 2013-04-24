@@ -7,7 +7,7 @@ use constant true => 1;
 use File::Temp qw(tempfile tmpnam);
 use Test::More;
 
-my $tests = 15;
+my $tests = 21;
 
 my %BUF_SIZE = (
    normal => 1024,
@@ -47,20 +47,38 @@ SKIP: {
     is_deeply([split /\n/, qx(cat $infile1 | $program none/none)], [split /\n/, $text], 'text read from stdin');
     is_deeply([split /\n/, qx($program none/none $infile1)],       [split /\n/, $text], 'text read from file');
 
-    is(qx(echo -n "\e[35mhello\e[0m \e[36mworld\e[0m" | $program --clean),       'hello world', 'clean colored words');
-    is(qx(echo -n "hello world" | $program Magenta | $program --clean),          'hello world', 'clean colored line');
-    is_deeply([split /\n/, qx($program cyan $infile1 | $program --clean)], [split /\n/, $text], 'clean colored text');
+    my $check_clean = sub
+    {
+        my ($type) = @_;
 
-    ok(qx(echo -n "\e[\e[33m" | $program --clean) eq "\e[", 'clean with invalid sequence');
+        my $switch = "--$type";
 
-    SKIP: {
-        my $program_buf = tmpnam();
-        skip 'compiling failed (short buffer)', 1 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{short} $warning_flags -o $program_buf $source") == 0;
+        is(qx(echo -n "\e[35mhello\e[0m \e[36mworld\e[0m" | $program $switch),       'hello world', "$type colored words");
+        is(qx(echo -n "hello world" | $program Magenta | $program $switch),          'hello world', "$type colored line");
+        is_deeply([split /\n/, qx($program cyan $infile1 | $program $switch)], [split /\n/, $text], "$type colored text");
+
+        ok(qx(echo -n "\e[\e[33m" | $program $switch) eq "\e[", "$type with invalid sequence");
+    };
+
+    $check_clean->($_) foreach qw(clean clean-all);
+
+    is(qx(echo -n "\e[4munderline\e[24m" | $program --clean-all), 'underline', 'clean-all color sequences');
+
+    my $check_clean_buf = sub
+    {
+        my ($program_buf, $type) = @_;
+
+        my $switch = "--$type";
 
         # Check that line chunks are merged when cleaning text
         my $short_text = 'Linux dev 2.6.32-5-openvz-686 #1 SMP Sun Sep 23 11:40:07 UTC 2012 i686 GNU/Linux';
-        is(qx(echo -n "$short_text" | $program_buf --clean), $short_text, "merge ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short})");
+        is(qx(echo -n "$short_text" | $program_buf $switch), $short_text, "merge ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short}, $type)");
+    };
 
+    SKIP: {
+        my $program_buf = tmpnam();
+        skip 'compiling failed (short buffer)', 2 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{short} $warning_flags -o $program_buf $source") == 0;
+        $check_clean_buf->($program_buf, $_) foreach qw(clean clean-all);
         unlink $program_buf;
     }
 
