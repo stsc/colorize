@@ -42,11 +42,13 @@
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
 
 #if DEBUG
-# define xmalloc(size)       malloc_wrap_debug(size,       __FILE__, __LINE__)
-# define xrealloc(ptr, size) realloc_wrap_debug(ptr, size, __FILE__, __LINE__)
+# define xmalloc(size)        malloc_wrap_debug(size,        __FILE__, __LINE__)
+# define xcalloc(nmemb, size) calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
+# define xrealloc(ptr, size)  realloc_wrap_debug(ptr, size,  __FILE__, __LINE__)
 #else
-# define xmalloc(size)       malloc_wrap(size)
-# define xrealloc(ptr, size) realloc_wrap(ptr, size)
+# define xmalloc(size)        malloc_wrap(size)
+# define xcalloc(nmemb, size) calloc_wrap(nmemb, size)
+# define xrealloc(ptr, size)  realloc_wrap(ptr, size)
 #endif
 
 #define free_null(ptr) free_wrap((void **)&ptr)
@@ -197,8 +199,10 @@ static void print_line (const struct color **, bool, const char * const, unsigne
 static void print_clean (const char *);
 static void print_free_offsets (const char *, char ***, unsigned int);
 static void *malloc_wrap (size_t);
+static void *calloc_wrap (size_t, size_t);
 static void *realloc_wrap (void *, size_t);
 static void *malloc_wrap_debug (size_t, const char *, unsigned int);
+static void *calloc_wrap_debug (size_t, size_t, const char *, unsigned int);
 static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
@@ -523,7 +527,7 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
               }
           }
 
-        color_names[index] = xmalloc (sizeof (struct color_name));
+        color_names[index] = xcalloc (1, sizeof (struct color_name));
 
         color_names[index]->orig = xstrdup (color);
 
@@ -922,6 +926,15 @@ malloc_wrap (size_t size)
 }
 
 static void *
+calloc_wrap (size_t nmemb, size_t size)
+{
+    void *p = calloc (nmemb, size);
+    if (!p)
+      MEM_ALLOC_FAIL ();
+    return p;
+}
+
+static void *
 realloc_wrap (void *ptr, size_t size)
 {
     void *p = realloc (ptr, size);
@@ -934,6 +947,15 @@ static void *
 malloc_wrap_debug (size_t size, const char *file, unsigned int line)
 {
     void *p = malloc (size);
+    if (!p)
+      MEM_ALLOC_FAIL_DEBUG (file, line);
+    return p;
+}
+
+static void *
+calloc_wrap_debug (size_t nmemb, size_t size, const char *file, unsigned int line)
+{
+    void *p = calloc (nmemb, size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
     return p;
