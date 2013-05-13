@@ -785,6 +785,7 @@ print_line (const struct color **colors, bool bold, const char *const line, unsi
       print_clean (line);
     else
       {
+        /* Foreground color code is guaranteed to be set when background color code is present.  */
         if (colors[BACKGROUND] && colors[BACKGROUND]->code)
           printf ("\033[%s", colors[BACKGROUND]->code);
         if (colors[FOREGROUND]->code)
