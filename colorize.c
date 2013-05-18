@@ -34,7 +34,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define DEBUG 0
+#ifndef DEBUG
+# define DEBUG 0
+#endif
 
 #define str(arg) #arg
 #define to_str(arg) str(arg)
