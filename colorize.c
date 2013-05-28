@@ -310,6 +310,8 @@ main (int argc, char **argv)
 
     if (clean || clean_all)
       {
+        if (clean && clean_all)
+          vfprintf_fail (formats[FMT_GENERIC], "--clean and --clean-all switch are mutually exclusive");
         if (arg_cnt > 1)
           {
             const char *format = "%s %s";
