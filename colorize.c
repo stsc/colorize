@@ -824,13 +824,13 @@ print_clean (const char *line)
               }
             else if (clean)
               {
-                bool check_values, first = true;
-                if (!isdigit (*p))
-                  goto END;
+                bool check_values;
+                unsigned int iter = 0;
+                const char *digit;
                 do {
-                  const char *digit;
                   check_values = false;
-                  if (!first && !isdigit (*p))
+                  iter++;
+                  if (!isdigit (*p))
                     goto DISCARD;
                   digit = p;
                   while (isdigit (*p))
@@ -847,19 +847,36 @@ print_clean (const char *line)
                         val[i] = *digit++;
                       val[i] = '\0';
                       value = atoi (val);
-                      if (!((value ==  0 || value ==  1)   /* attributes        */
-                         || (value >= 30 && value <= 37)   /* foreground colors */
-                         || (value >= 40 && value <= 47)   /* background colors */
-                         || (value == 39 || value == 49))) /* default colors    */
+                      if (value == 0) /* reset */
+                        {
+                          if (iter > 1)
+                            goto DISCARD;
+                          goto END;
+                        }
+                      else if (value == 1) /* bold */
+                        {
+                          bool discard = false;
+                          if (iter > 1)
+                            discard = true;
+                          else if (*p != ';')
+                            discard = true;
+                          if (discard)
+                            goto DISCARD;
+                          p++;
+                          check_values = true;
+                        }
+                      else if ((value >= 30 && value <= 37) || value == 39) /* foreground colors */
+                        goto END;
+                      else if ((value >= 40 && value <= 47) || value == 49) /* background colors */
+                        {
+                          if (iter > 1)
+                            goto DISCARD;
+                          goto END;
+                        }
+                      else
                         goto DISCARD;
                     }
-                  if (*p == ';')
-                    {
-                      p++;
-                      check_values = true;
-                    }
-                  first = false;
-                } while (check_values);
+                } while (iter == 1 && check_values);
               }
             END: if (*p == 'm')
               {

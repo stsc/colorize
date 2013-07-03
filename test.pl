@@ -7,7 +7,7 @@ use constant true => 1;
 use File::Temp qw(tempfile tmpnam);
 use Test::More;
 
-my $tests = 21;
+my $tests = 22;
 
 my %BUF_SIZE = (
    normal => 1024,
@@ -46,6 +46,21 @@ SKIP: {
 
     is_deeply([split /\n/, qx(cat $infile1 | $program none/none)], [split /\n/, $text], 'text read from stdin');
     is_deeply([split /\n/, qx($program none/none $infile1)],       [split /\n/, $text], 'text read from file');
+
+    {
+        my @fg_colors = (30..37, 39);
+        my @bg_colors = (40..47, 49);
+
+        my @bold_colors = map "1;$_", @fg_colors;
+
+        my @values = (@fg_colors, @bg_colors, @bold_colors, 0);
+
+        my $ok = true;
+        foreach my $value (@values) {
+            $ok &= qx(echo -n "\e[${value}m" | $program --clean) eq '';
+        }
+        ok($ok, 'clean color sequences');
+    }
 
     my $check_clean = sub
     {
