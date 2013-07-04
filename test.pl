@@ -102,10 +102,12 @@ SKIP: {
 
     is_deeply([split /\n/, qx(cat $infile2 | $program none/none)], [split /\n/, $repeated], "read ${\length $repeated} bytes (BUF_SIZE=$BUF_SIZE{normal})");
 
-    my $colored_text = qx(echo "foo bar baz" | $program red);
-    my $sequences = 0;
-    $sequences++ while $colored_text =~ /\e\[\d+m/g;
-    is($sequences, 2, 'count of sequences printed');
+    {
+        my $colored_text = qx(echo "foo bar baz" | $program red);
+        my $sequences = 0;
+        $sequences++ while $colored_text =~ /\e\[\d+m/g;
+        is($sequences, 2, 'count of sequences printed');
+    }
 
     is(qx(echo -n "hello\nworld\r\n" | $program none/none), "hello\nworld\r\n", 'stream mode');
 
