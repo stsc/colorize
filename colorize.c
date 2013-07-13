@@ -163,19 +163,6 @@ static const struct {
     { bg_colors, sizeof (bg_colors) / sizeof (struct color), "background" },
 };
 
-enum stream_mode { SCAN_FIRST = 1, SCAN_ALWAYS };
-
-struct ending {
-    unsigned int flags;
-    const char newline[3];
-};
-
-static const struct ending endings[] = {
-    { CR & LF, "\r\n" },
-    { CR,      "\r"   },
-    { LF,      "\n"   },
-};
-
 static FILE *stream = NULL;
 
 static unsigned int stacked_vars = 0;
@@ -194,7 +181,7 @@ static void cleanup (void);
 static void free_color_names (struct color_name **);
 static void process_options (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
 static void process_file_option (const char *, const char **, FILE **);
-static void read_print_stream (bool, const struct color **, const char *, FILE *, enum stream_mode);
+static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const char *const, unsigned int, const struct color **);
 static void print_line (const struct color **, bool, const char * const, unsigned int);
@@ -252,8 +239,6 @@ main (int argc, char **argv)
     };
 
     const char *file;
-
-    enum stream_mode mode = SCAN_FIRST;
 
     program_name = argv[0];
     atexit (cleanup);
@@ -335,7 +320,7 @@ main (int argc, char **argv)
       process_file_option (argv[optind], &file, &stream);
     else
       process_options (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
-    read_print_stream (bold, colors, file, stream, mode);
+    read_print_stream (bold, colors, file, stream);
 
     RELEASE_VAR (exclude);
 
@@ -622,23 +607,10 @@ process_file_option (const char *file_string, const char **file, FILE **stream)
 } while (false);
 
 static void
-read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream, enum stream_mode mode)
+read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream)
 {
     char buf[BUF_SIZE], *part_line = NULL;
     unsigned int flags = 0;
-    bool first = false, always = false;
-
-    switch (mode)
-      {
-        case SCAN_FIRST:
-          first = true;
-          break;
-        case SCAN_ALWAYS:
-          always = true;
-          break;
-        default: /* never reached */
-          ABORT_TRACE ();
-      }
 
     while (!feof (stream))
       {
@@ -650,46 +622,21 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         if (bytes_read != (BUF_SIZE - 1) && ferror (stream))
           vfprintf_fail (formats[FMT_ERROR], BUF_SIZE - 1, "read");
         line = buf;
-        LOOP: while ((eol = strpbrk (line, "\n\r")))
+        while ((eol = strpbrk (line, "\n\r")))
           {
             char *p;
-            if (first || always)
+            flags &= ~(CR|LF);
+            if (*eol == '\r')
               {
-                first = false;
-                flags &= ~(CR|LF);
-                if (*eol == '\r')
-                  {
-                    flags |= CR;
-                    if (*(eol + 1) == '\n')
-                      flags |= LF;
-                  }
-                else if (*eol == '\n')
+                flags |= CR;
+                if (*(eol + 1) == '\n')
                   flags |= LF;
-                else
-                  vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
               }
-            if (always)
-              p = eol + SKIP_LINE_ENDINGS (flags);
-            else /* first */
-              {
-                unsigned int i;
-                unsigned int count = sizeof (endings) / sizeof (struct ending);
-                for (i = 0; i < count; i++)
-                  {
-                    if (flags & endings[i].flags)
-                      {
-                        char *p;
-                        if ((p = strstr (eol, endings[i].newline)) && p == eol)
-                          break;
-                        else
-                          {
-                            always = true;
-                            goto LOOP;
-                          }
-                      }
-                  }
-                p = eol + SKIP_LINE_ENDINGS (flags);
-              }
+            else if (*eol == '\n')
+              flags |= LF;
+            else
+              vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
+            p = eol + SKIP_LINE_ENDINGS (flags);
             *eol = '\0';
             MERGE_PRINT_LINE (part_line, line, flags, false);
             line = p;
