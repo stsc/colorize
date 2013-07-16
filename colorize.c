@@ -644,7 +644,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         if (feof (stream)) {
           MERGE_PRINT_LINE (part_line, line, 0, true);
         }
-        else
+        else if (*line != '\0')
           {
             if (!clean && !clean_all) /* efficiency */
               print_line (colors, bold, line, 0);
