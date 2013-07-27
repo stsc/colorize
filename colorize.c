@@ -43,6 +43,9 @@
 
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
 
+#define vfprintf_fail(fmt, ...) vfprintf_name(true,  fmt, __VA_ARGS__)
+#define vfprintf_diag(fmt, ...) vfprintf_name(false, fmt, __VA_ARGS__)
+
 #if DEBUG
 # define xmalloc(size)        malloc_wrap_debug(size,        __FILE__, __LINE__)
 # define xcalloc(nmemb, size) calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
@@ -196,7 +199,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
-static void vfprintf_fail (const char *, ...);
+static void vfprintf_name (bool, const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
 
@@ -972,7 +975,7 @@ str_concat (const char *str1, const char *str2)
 }
 
 static void
-vfprintf_fail (const char *fmt, ...)
+vfprintf_name (bool fatal, const char *fmt, ...)
 {
     va_list ap;
     fprintf (stderr, "%s: ", program_name);
@@ -980,7 +983,8 @@ vfprintf_fail (const char *fmt, ...)
     vfprintf (stderr, fmt, ap);
     va_end (ap);
     fprintf (stderr, "\n");
-    exit (EXIT_FAILURE);
+    if (fatal)
+      exit (EXIT_FAILURE);
 }
 
 static void
