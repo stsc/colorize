@@ -196,6 +196,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
+static void vfprintf_diag (const char *, ...);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
@@ -971,15 +972,24 @@ str_concat (const char *str1, const char *str2)
     return str;
 }
 
+#define DO_VFPRINTF(fmt)                    \
+    va_list ap;                             \
+    fprintf (stderr, "%s: ", program_name); \
+    va_start (ap, fmt);                     \
+    vfprintf (stderr, fmt, ap);             \
+    va_end (ap);                            \
+    fprintf (stderr, "\n");                 \
+
+static void
+vfprintf_diag (const char *fmt, ...)
+{
+    DO_VFPRINTF (fmt);
+}
+
 static void
 vfprintf_fail (const char *fmt, ...)
 {
-    va_list ap;
-    fprintf (stderr, "%s: ", program_name);
-    va_start (ap, fmt);
-    vfprintf (stderr, fmt, ap);
-    va_end (ap);
-    fprintf (stderr, "\n");
+    DO_VFPRINTF (fmt);
     exit (EXIT_FAILURE);
 }
 
