@@ -183,7 +183,7 @@ static void process_options (unsigned int, char **, bool *, const struct color *
 static void process_file_option (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void find_color_entries (struct color_name **, const struct color **);
-static void find_color_entry (const char *const, unsigned int, const struct color **);
+static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (const struct color **, bool, const char * const, unsigned int);
 static void print_clean (const char *);
 static void print_free_offsets (const char *, char ***, unsigned int);
@@ -548,7 +548,12 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
     free_color_names (color_names);
 
     if (!colors[FOREGROUND]->code && colors[BACKGROUND] && colors[BACKGROUND]->code)
-      find_color_entry ("default", FOREGROUND, colors);
+      {
+        struct color_name color_name;
+        color_name.name = color_name.orig = "default";
+
+        find_color_entry (&color_name, FOREGROUND, colors);
+      }
 
     process_file_option (file_string, file, stream);
 }
@@ -705,12 +710,12 @@ find_color_entries (struct color_name **color_names, const struct color **colors
             colors[index] = (struct color *)&color_entries[i];
           }
         else
-          find_color_entry (color_name, index, colors);
+          find_color_entry (color_names[index], index, colors);
       }
 }
 
 static void
-find_color_entry (const char *const color_name, unsigned int index, const struct color **colors)
+find_color_entry (const struct color_name *color_name, unsigned int index, const struct color **colors)
 {
     bool found = false;
     unsigned int i;
@@ -719,14 +724,14 @@ find_color_entry (const char *const color_name, unsigned int index, const struct
     const struct color *const color_entries = tables[index].entries;
 
     for (i = 0; i < count; i++)
-      if (streq (color_name, color_entries[i].name))
+      if (streq (color_name->name, color_entries[i].name))
         {
           colors[index] = (struct color *)&color_entries[i];
           found = true;
           break;
         }
     if (!found)
-      vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color_name, "not recognized");
+      vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color_name->orig, "not recognized");
 }
 
 static void
