@@ -312,6 +312,7 @@ main (int argc, char **argv)
       {
         if (arg_cnt == 0 || arg_cnt > 2)
           {
+            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or option", arg_cnt);
             print_help ();
             exit (EXIT_FAILURE);
           }
