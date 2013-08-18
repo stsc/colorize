@@ -8,7 +8,7 @@ CC=gcc
 CFLAGS=-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter
 
 colorize:	colorize.c
-			$(CC) $(CFLAGS) -o $@ $< -DCFLAGS="$(CFLAGS)"
+			$(CC) $(CFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)"
 
 check:
 			perl ./test.pl
