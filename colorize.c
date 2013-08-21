@@ -239,7 +239,7 @@ main (int argc, char **argv)
         NULL, /* background */
     };
 
-    const char *file;
+    const char *file = NULL;
 
     program_name = argv[0];
     atexit (cleanup);
