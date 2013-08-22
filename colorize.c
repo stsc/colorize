@@ -598,6 +598,7 @@ process_file_option (const char *file_string, const char **file, FILE **stream)
       }
 
     assert (*stream);
+    assert (*file);
 }
 
 #define MERGE_PRINT_LINE(part_line, line, flags, check_eof) do { \
