@@ -179,8 +179,8 @@ static void print_help (void);
 static void print_version (void);
 static void cleanup (void);
 static void free_color_names (struct color_name **);
-static void process_options (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
-static void process_file_option (const char *, const char **, FILE **);
+static void process_args (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
+static void process_file_arg (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
@@ -319,9 +319,9 @@ main (int argc, char **argv)
       }
 
     if (clean || clean_all)
-      process_file_option (argv[optind], &file, &stream);
+      process_file_arg (argv[optind], &file, &stream);
     else
-      process_options (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
+      process_args (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
     read_print_stream (bold, colors, file, stream);
 
     RELEASE_VAR (exclude);
@@ -406,15 +406,15 @@ free_color_names (struct color_name **color_names)
 }
 
 static void
-process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const struct color **colors, const char **file, FILE **stream)
+process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct color **colors, const char **file, FILE **stream)
 {
     int ret;
     unsigned int index;
     char *color, *p, *str;
     struct stat sb;
 
-    const char *color_string = arg_cnt >= 1 ? option_strings[0] : NULL;
-    const char *file_string  = arg_cnt == 2 ? option_strings[1] : NULL;
+    const char *color_string = arg_cnt >= 1 ? arg_strings[0] : NULL;
+    const char *file_string  = arg_cnt == 2 ? arg_strings[1] : NULL;
 
     assert (color_string);
 
@@ -556,11 +556,11 @@ process_options (unsigned int arg_cnt, char **option_strings, bool *bold, const 
         find_color_entry (&color_name, FOREGROUND, colors);
       }
 
-    process_file_option (file_string, file, stream);
+    process_file_arg (file_string, file, stream);
 }
 
 static void
-process_file_option (const char *file_string, const char **file, FILE **stream)
+process_file_arg (const char *file_string, const char **file, FILE **stream)
 {
     if (file_string)
       {
