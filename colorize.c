@@ -184,7 +184,7 @@ static void process_file_arg (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
-static void print_line (const struct color **, bool, const char * const, unsigned int);
+static void print_line (bool, const struct color **, const char * const, unsigned int);
 static void print_clean (const char *);
 static void print_free_offsets (const char *, char ***, unsigned int);
 static void *malloc_wrap (size_t);
@@ -610,7 +610,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
       }                                                          \
     current_line = merged_line ? merged_line : (char *)line;     \
     if (!check_eof || *current_line != '\0')                     \
-      print_line (colors, bold, current_line, flags);            \
+      print_line (bold, colors, current_line, flags);            \
     free (merged_line);                                          \
 } while (false);
 
@@ -655,7 +655,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         else if (*line != '\0')
           {
             if (!clean && !clean_all) /* efficiency */
-              print_line (colors, bold, line, 0);
+              print_line (bold, colors, line, 0);
             else if (!part_line)
               part_line = xstrdup (line);
             else
@@ -737,7 +737,7 @@ find_color_entry (const struct color_name *color_name, unsigned int index, const
 }
 
 static void
-print_line (const struct color **colors, bool bold, const char *const line, unsigned int flags)
+print_line (bool bold, const struct color **colors, const char *const line, unsigned int flags)
 {
     /* --clean[-all] */
     if (clean || clean_all)
