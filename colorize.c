@@ -484,6 +484,8 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
     for (index = 0, color = str; *color; index++, color = p)
       {
         char *ch, *sep;
+
+        p = NULL;
         if ((sep = strchr (color, COLOR_SEP_CHAR)))
           {
             *sep = '\0';
@@ -491,6 +493,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
           }
         else
           p = color + strlen (color);
+        assert (p);
 
         for (ch = color; *ch; ch++)
           if (!isalpha (*ch))
