@@ -1,4 +1,4 @@
-.TH COLORIZE 1 "2013-06-16" "colorize v0.51" "User Commands"
+.TH COLORIZE 1 "2013-10-20" "colorize v0.51" "User Commands"
 .SH NAME
 colorize \- colorize text with escape sequences
 .SH SYNOPSIS
@@ -24,8 +24,8 @@ Color escape sequences are added per each line, hence colored lines can be
 safely extracted.
 .PP
 When de-colorizing text, \-\-clean omits color escape sequences which
-were emitted by colorize, whereas \-\-clean\-all omits all valid ones.
-If in doubt, consider using \-\-clean\-all.
+were emitted by colorize (see NOTES for list), whereas \-\-clean\-all
+omits all valid ones.  If in doubt, consider using \-\-clean\-all.
 .SH OPTIONS
 .TP
 .BR \-\-clean
@@ -42,5 +42,16 @@ show usage screen and exit
 .TP
 .BR \-v ", " \-\-version
 display version data and exit
+.SH NOTES
+The list of color escape sequence codes being emitted and omitted is
+as follows:
+.IP * 4
+30-37,39 (foreground colors)
+.IP * 4
+1;30-37,39 (bold foreground colors)
+.IP * 4
+40-47,49 (background colors)
+.IP * 4
+0 (reset)
 .SH AUTHOR
 Steven Schubiger <stsc@refcnt.org>
