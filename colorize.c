@@ -196,6 +196,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
+static bool has_color_name (const char *, const char *);
 static void vfprintf_diag (const char *, ...);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
@@ -443,13 +444,17 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
             for (i = 0; i < tables[FOREGROUND].count; i++)
               {
                 const struct color *entry = &tables[FOREGROUND].entries[i];
-                char *p;
-                if ((p = strstr (color, entry->name)) && p == color)
+                if (has_color_name (color, entry->name))
                   {
-                    color = p + strlen (entry->name);
+                    color += strlen (entry->name);
                     matched = true;
                     break;
                   }
+              }
+            if (!matched && has_color_name (color, "random"))
+              {
+                color += strlen ("random");
+                matched = true;
               }
             if (matched && *color == COLOR_SEP_CHAR && *(color + 1))
               color++;
@@ -980,6 +985,23 @@ str_concat (const char *str1, const char *str2)
     *p = '\0';
 
     return str;
+}
+
+static bool
+has_color_name (const char *str, const char *name)
+{
+    char *p;
+
+    assert (strlen (str));
+    assert (strlen (name));
+
+    if (!(*str == *name || *str == toupper (*name)))
+      return false;
+    else if (*(name + 1) != '\0'
+     && !((p = strstr (str + 1, name + 1)) && p == str + 1))
+      return false;
+
+    return true;
 }
 
 #define DO_VFPRINTF(fmt)                    \
