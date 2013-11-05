@@ -230,7 +230,7 @@ main (int argc, char **argv)
         { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
         { "help",           no_argument,       &opt_type, OPT_HELP           },
         { "version",        no_argument,       &opt_type, OPT_VERSION        },
-        {  0,               0,                 0,         0                  },
+        {  NULL,            0,                 NULL,      0                  },
     };
 
     bool bold = false;
