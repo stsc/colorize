@@ -61,7 +61,7 @@ SKIP: {
 
         my $file = $write_to_tmpfile->('abc');
 
-        $ok &= $run_program_fail->($program, '--exclude-random=random', 'must be provided a color');
+        $ok &= $run_program_fail->($program, '--exclude-random=random', 'must be provided a plain color');
         $ok &= $run_program_fail->($program, '--clean --clean-all',     'mutually exclusive');
         $ok &= $run_program_fail->($program, '--clean file1 file2',     'more than one file');
         $ok &= $run_program_fail->($program, '--clean-all file1 file2', 'more than one file');

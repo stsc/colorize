@@ -262,13 +262,21 @@ main (int argc, char **argv)
                     clean_all = true;
                     break;
                   case OPT_EXCLUDE_RANDOM: {
-                    char *p;
+                    bool valid = false;
+                    unsigned int i;
                     exclude = xstrdup (optarg);
                     STACK_VAR (exclude);
-                    for (p = exclude; *p; p++)
-                      *p = tolower (*p);
-                    if (streq (exclude, "random"))
-                      vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a color");
+                    for (i = 1; i < tables[FOREGROUND].count - 1; i++) /* skip color none and default */
+                      {
+                        const struct color *entry = &tables[FOREGROUND].entries[i];
+                        if (streq (exclude, entry->name))
+                          {
+                            valid = true;
+                            break;
+                          }
+                      }
+                    if (!valid)
+                      vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a plain color");
                     break;
                   }
                   case OPT_HELP:
