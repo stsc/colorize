@@ -68,20 +68,20 @@
 
 #define STACK_VAR(ptr) do {                                   \
     stack_var (&vars_list, &stacked_vars, stacked_vars, ptr); \
-} while (false);
+} while (false)
 
 #define RELEASE_VAR(ptr) do {                             \
     release_var (vars_list, stacked_vars, (void **)&ptr); \
-} while (false);
+} while (false)
 
 #define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                               \
     fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
     exit (2);                                                                               \
-} while (false);
+} while (false)
 #define MEM_ALLOC_FAIL() do {                                          \
     fprintf (stderr, "%s: memory allocation failure\n", program_name); \
     exit (2);                                                          \
-} while (false);
+} while (false)
 
 #define ABORT_TRACE()                                                              \
     fprintf (stderr, "Aborting in source file %s, line %u\n", __FILE__, __LINE__); \
@@ -628,7 +628,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
     if (!check_eof || *current_line != '\0')                     \
       print_line (bold, colors, current_line, flags);            \
     free (merged_line);                                          \
-} while (false);
+} while (false)
 
 static void
 read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream)
