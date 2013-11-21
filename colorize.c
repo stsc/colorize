@@ -56,9 +56,11 @@
 #define free_null(ptr) free_wrap((void **)&ptr)
 #define xstrdup(str)   strdup_wrap(str)
 
-#if !defined BUF_SIZE || BUF_SIZE <= 0
+#if BUF_SIZE <= 1 /* BUF_SIZE - 1 */
 # undef BUF_SIZE
-# define BUF_SIZE 4096 + 1
+#endif
+#ifndef BUF_SIZE
+# define BUF_SIZE 4096
 #endif
 
 #define LF 0x01
@@ -380,7 +382,7 @@ print_version (void)
     c_flags = "unknown";
 #endif
     printf ("Compiler flags: %s\n", c_flags);
-    printf ("Buffer size: %u bytes\n", BUF_SIZE - 1);
+    printf ("Buffer size: %u bytes\n", BUF_SIZE);
 }
 
 static void
