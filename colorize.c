@@ -56,7 +56,7 @@
 #define free_null(ptr) free_wrap((void **)&ptr)
 #define xstrdup(str)   strdup_wrap(str)
 
-#if BUF_SIZE <= 1 /* BUF_SIZE - 1 */
+#if BUF_SIZE <= 0
 # undef BUF_SIZE
 #endif
 #ifndef BUF_SIZE
@@ -635,7 +635,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
 static void
 read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream)
 {
-    char buf[BUF_SIZE], *part_line = NULL;
+    char buf[BUF_SIZE + 1], *part_line = NULL;
     unsigned int flags = 0;
 
     while (!feof (stream))
@@ -643,10 +643,10 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         size_t bytes_read;
         char *eol;
         const char *line;
-        memset (buf, '\0', BUF_SIZE);
-        bytes_read = fread (buf, 1, BUF_SIZE - 1, stream);
-        if (bytes_read != (BUF_SIZE - 1) && ferror (stream))
-          vfprintf_fail (formats[FMT_ERROR], BUF_SIZE - 1, "read");
+        memset (buf, '\0', BUF_SIZE + 1);
+        bytes_read = fread (buf, 1, BUF_SIZE, stream);
+        if (bytes_read != BUF_SIZE && ferror (stream))
+          vfprintf_fail (formats[FMT_ERROR], BUF_SIZE, "read");
         line = buf;
         while ((eol = strpbrk (line, "\n\r")))
           {
