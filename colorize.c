@@ -375,14 +375,21 @@ static void
 print_version (void)
 {
     const char *c_flags;
-    printf ("%s v%s (compiled at %s, %s)\n", "colorize", VERSION, __DATE__, __TIME__);
+    bool debug;
 #ifdef CFLAGS
     c_flags = to_str (CFLAGS);
 #else
     c_flags = "unknown";
 #endif
+#if DEBUG
+    debug = true;
+#else
+    debug = false;
+#endif
+    printf ("%s v%s (compiled at %s, %s)\n", "colorize", VERSION, __DATE__, __TIME__);
     printf ("Compiler flags: %s\n", c_flags);
     printf ("Buffer size: %u bytes\n", BUF_SIZE);
+    printf ("Debugging: %s\n", debug ? "yes" : "no");
 }
 
 static void
