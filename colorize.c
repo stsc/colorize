@@ -121,8 +121,8 @@ static const struct color fg_colors[] = {
     { "green",   "32m" },
     { "yellow",  "33m" },
     { "blue",    "34m" },
-    { "cyan",    "35m" },
-    { "magenta", "36m" },
+    { "magenta", "35m" },
+    { "cyan",    "36m" },
     { "white",   "37m" },
     { "default", "39m" },
 };
@@ -133,8 +133,8 @@ static const struct color bg_colors[] = {
     { "green",   "42m" },
     { "yellow",  "43m" },
     { "blue",    "44m" },
-    { "cyan",    "45m" },
-    { "magenta", "46m" },
+    { "magenta", "45m" },
+    { "cyan",    "46m" },
     { "white",   "47m" },
     { "default", "49m" },
 };
