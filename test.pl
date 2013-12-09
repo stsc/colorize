@@ -169,7 +169,7 @@ SKIP: {
 Colors
 ======
 EOT
-    foreach my $color (qw(none black red green yellow blue cyan magenta white default random)) {
+    foreach my $color (qw(none black red green yellow blue magenta cyan white default random)) {
         system("echo $color | $program $color");
         next if $color eq 'none';
         my $bold_color = ucfirst $color;
