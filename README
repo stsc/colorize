@@ -1,0 +1,45 @@
+colorize
+========
+
+Description
+-----------
+Colorize aims at being a small, independent and handy command-line
+text colorizing tool.  It emits ANSI escape sequences in order to
+color lines of text; also, sequences emitted by colorize or foreign
+programs may be cleared.
+
+The main code is written in C (c89 mostly), whereas the test script
+consists of Perl code.
+
+Colorize is known to build and test successfully on Linux and
+Net/Open/MirBSD.  Other platforms are untested, so be prepared for
+it to eventually not work as expected there.
+
+Requirements
+------------
+gcc
+make
+perl
+
+Build instructions
+------------------
+Issue `make' to build colorize.
+
+Once completed, run the tests with `make check'.
+
+Then you should most likely have a working binary.  There are
+currently no make targets to install it as such.
+
+Finally, remove it through `make clean'.
+
+Documentation
+-------------
+See man page source file: colorize.1.
+
+Afterword
+---------
+Let me know, if you have ideas, bug reports, patches, etc.
+
+Author
+------
+Steven Schubiger <stsc@refcnt.org>
