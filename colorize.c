@@ -98,9 +98,7 @@
 
 #define VERSION "0.52"
 
-typedef unsigned short bool;
-
-enum { false, true };
+typedef enum { false, true } bool;
 
 struct color_name {
     char *name;
