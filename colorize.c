@@ -175,6 +175,7 @@ static char *exclude = NULL;
 
 static const char *program_name;
 
+static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
 static void cleanup (void);
@@ -294,7 +295,7 @@ main (int argc, char **argv)
             case 'v':
               SET_OPT_TYPE (OPT_VERSION);
             case '?':
-              print_help ();
+              print_hint ();
               exit (EXIT_FAILURE);
             default: /* never reached */
               ABORT_TRACE ();
@@ -321,8 +322,8 @@ main (int argc, char **argv)
       {
         if (arg_cnt == 0 || arg_cnt > 2)
           {
-            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or option", arg_cnt);
-            print_help ();
+            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or clean option", arg_cnt);
+            print_hint ();
             exit (EXIT_FAILURE);
           }
       }
@@ -336,6 +337,12 @@ main (int argc, char **argv)
     RELEASE_VAR (exclude);
 
     exit (EXIT_SUCCESS);
+}
+
+static void
+print_hint (void)
+{
+    fprintf (stderr, "Type `%s --help' for usage screen.\n", program_name);
 }
 
 static void
