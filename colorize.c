@@ -342,7 +342,7 @@ main (int argc, char **argv)
 static void
 print_hint (void)
 {
-    fprintf (stderr, "Type `%s --help' for usage screen.\n", program_name);
+    fprintf (stderr, "Type `%s --help' for help screen.\n", program_name);
 }
 
 static void
