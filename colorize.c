@@ -211,6 +211,8 @@ static void release_var (void **, unsigned int, void **);
 extern char *optarg;
 extern int optind;
 
+static int opt_type = 0;
+
 int
 main (int argc, char **argv)
 {
@@ -224,7 +226,7 @@ main (int argc, char **argv)
         OPT_VERSION
     };
 
-    int opt, opt_type = 0;
+    int opt;
     struct option long_opts[] = {
         { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
         { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
