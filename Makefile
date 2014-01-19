@@ -5,7 +5,7 @@
 
 SHELL=/bin/sh
 CC=gcc
-CFLAGS=-Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter
+CFLAGS=-ansi -pedantic
 
 colorize:	colorize.c
 			$(CC) $(CFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)"
