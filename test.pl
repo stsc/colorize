@@ -5,7 +5,7 @@ use warnings;
 use constant true  => 1;
 use constant false => 0;
 
-use File::Temp qw(tempfile tmpnam);
+use File::Temp qw(tempfile tempdir tmpnam);
 use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
@@ -64,6 +64,7 @@ SKIP: {
         my $ok = true;
 
         my $file = $write_to_tmpfile->('abc');
+        my $dir  = tempdir(CLEANUP => true);
 
         $ok &= $run_program_fail->($program, '--exclude-random=random', 'must be provided a plain color');
         $ok &= $run_program_fail->($program, '--clean --clean-all',     'mutually exclusive');
@@ -71,8 +72,9 @@ SKIP: {
         $ok &= $run_program_fail->($program, '--clean-all file1 file2', 'more than one file');
         $ok &= $run_program_fail->($program, '- file',                  'hyphen cannot be used as color string');
         $ok &= $run_program_fail->($program, '-',                       'hyphen must be preceeded by color string');
-        $ok &= $run_program_fail->($program, "$file file",              'file cannot be used as color string');
-        $ok &= $run_program_fail->($program, "$file",                   'file must be preceeded by color string');
+        $ok &= $run_program_fail->($program, "$file file",              'cannot be used as color string');
+        $ok &= $run_program_fail->($program, "$file",                   'must be preceeded by color string');
+        $ok &= $run_program_fail->($program, "$dir",                    'is not a valid file type');
         $ok &= $run_program_fail->($program, '/black',                  'foreground color missing');
         $ok &= $run_program_fail->($program, 'white/',                  'background color missing');
         $ok &= $run_program_fail->($program, 'white/black/yellow',      'one color pair allowed only');

@@ -68,6 +68,8 @@
 
 #define SKIP_LINE_ENDINGS(flags) (((flags) & CR) && ((flags) & LF) ? 2 : 1)
 
+#define VALID_FILE_TYPE(mode) (S_ISREG (mode) || S_ISLNK (mode) || S_ISFIFO (mode))
+
 #define STACK_VAR(ptr) do {                                   \
     stack_var (&vars_list, &stacked_vars, stacked_vars, ptr); \
 } while (false)
@@ -139,17 +141,21 @@ static const struct color bg_colors[] = {
 
 enum fmts {
     FMT_GENERIC,
+    FMT_QUOTE,
     FMT_COLOR,
     FMT_RANDOM,
     FMT_ERROR,
-    FMT_FILE
+    FMT_FILE,
+    FMT_TYPE
 };
 static const char *formats[] = {
     "%s",                    /* generic */
+    "%s `%s' %s",            /* quote   */
     "%s color '%s' %s",      /* color   */
     "%s color '%s' %s '%s'", /* random  */
     "less than %u bytes %s", /* error   */
     "%s: %s",                /* file    */
+    "%s: %s: %s",            /* type    */
 };
 
 enum { FOREGROUND, BACKGROUND };
@@ -197,6 +203,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
+static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
 static void vfprintf_diag (const char *, ...);
 static void vfprintf_fail (const char *, ...);
@@ -451,7 +458,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
           vfprintf_fail (formats[FMT_GENERIC], "hyphen must be preceeded by color string");
       }
 
-    ret = stat (color_string, &sb);
+    ret = lstat (color_string, &sb);
 
     /* Ensure that we don't fail if there's a file with one or more
        color names in its path.  */
@@ -460,6 +467,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
         bool have_file;
         unsigned int c;
         const char *color = color_string;
+        const mode_t mode = sb.st_mode;
 
         for (c = 1; c <= 2 && *color; c++)
           {
@@ -491,9 +499,14 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
         if (have_file)
           {
             if (file_string)
-              vfprintf_fail (formats[FMT_GENERIC], "file cannot be used as color string");
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "cannot be used as color string");
             else
-              vfprintf_fail (formats[FMT_GENERIC], "file must be preceeded by color string");
+              {
+                if (VALID_FILE_TYPE (mode))
+                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "must be preceeded by color string");
+                else
+                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "is not a valid file type");
+              }
           }
       }
 
@@ -606,13 +619,13 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
             int errno, ret;
 
             errno = 0;
-            ret = stat (file, &sb);
+            ret = lstat (file, &sb);
 
             if (ret == -1)
               vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
 
-            if (!(S_ISREG (sb.st_mode) || S_ISLNK (sb.st_mode) || S_ISFIFO (sb.st_mode)))
-              vfprintf_fail (formats[FMT_FILE], file, "unrecognized file type");
+            if (!VALID_FILE_TYPE (sb.st_mode))
+              vfprintf_fail (formats[FMT_TYPE], file, "unrecognized type", get_file_type (sb.st_mode));
 
             errno = 0;
 
@@ -1009,6 +1022,27 @@ str_concat (const char *str1, const char *str2)
     *p = '\0';
 
     return str;
+}
+
+static char *
+get_file_type (mode_t mode)
+{
+    if (S_ISREG (mode))
+      return "file";
+    else if (S_ISDIR (mode))
+      return "directory";
+    else if (S_ISCHR (mode))
+      return "character device";
+    else if (S_ISBLK (mode))
+      return "block device";
+    else if (S_ISFIFO (mode))
+      return "named pipe";
+    else if (S_ISLNK (mode))
+      return "symbolic link";
+    else if (S_ISSOCK (mode))
+      return "socket";
+    else
+      return "file";
 }
 
 static bool
