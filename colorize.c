@@ -142,6 +142,7 @@ static const struct color bg_colors[] = {
 
 enum fmts {
     FMT_GENERIC,
+    FMT_STRING,
     FMT_QUOTE,
     FMT_COLOR,
     FMT_RANDOM,
@@ -151,6 +152,7 @@ enum fmts {
 };
 static const char *formats[] = {
     "%s",                    /* generic */
+    "%s '%s'",               /* string  */
     "%s `%s' %s",            /* quote   */
     "%s color '%s' %s",      /* color   */
     "%s color '%s' %s '%s'", /* random  */
@@ -514,11 +516,11 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
     if ((p = strchr (color_string, COLOR_SEP_CHAR)))
       {
         if (p == color_string)
-          vfprintf_fail (formats[FMT_GENERIC], "foreground color missing");
+          vfprintf_fail (formats[FMT_STRING], "foreground color missing in string", color_string);
         else if (p == color_string + strlen (color_string) - 1)
-          vfprintf_fail (formats[FMT_GENERIC], "background color missing");
+          vfprintf_fail (formats[FMT_STRING], "background color missing in string", color_string);
         else if (strchr (++p, COLOR_SEP_CHAR))
-          vfprintf_fail (formats[FMT_GENERIC], "one color pair allowed only");
+          vfprintf_fail (formats[FMT_STRING], "one color pair allowed only for string", color_string);
       }
 
     str = xstrdup (color_string);
