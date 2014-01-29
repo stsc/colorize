@@ -79,14 +79,17 @@
     release_var (vars_list, stacked_vars, (void **)&ptr); \
 } while (false)
 
-#define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                               \
+#if DEBUG
+# define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                              \
     fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
     exit (2);                                                                               \
 } while (false)
-#define MEM_ALLOC_FAIL() do {                                          \
+#else
+# define MEM_ALLOC_FAIL() do {                                         \
     fprintf (stderr, "%s: memory allocation failure\n", program_name); \
     exit (2);                                                          \
 } while (false)
+#endif
 
 #define ABORT_TRACE()                                                              \
     fprintf (stderr, "Aborting in source file %s, line %u\n", __FILE__, __LINE__); \
@@ -197,12 +200,15 @@ static void find_color_entry (const struct color_name *, unsigned int, const str
 static void print_line (bool, const struct color **, const char * const, unsigned int);
 static void print_clean (const char *);
 static void print_free_offsets (const char *, char ***, unsigned int);
+#if !DEBUG
 static void *malloc_wrap (size_t);
 static void *calloc_wrap (size_t, size_t);
 static void *realloc_wrap (void *, size_t);
+#else
 static void *malloc_wrap_debug (size_t, const char *, unsigned int);
 static void *calloc_wrap_debug (size_t, size_t, const char *, unsigned int);
 static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
+#endif
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
@@ -941,6 +947,7 @@ print_free_offsets (const char *line, char ***offsets, unsigned int count)
     free_null (offsets);
 }
 
+#if !DEBUG
 static void *
 malloc_wrap (size_t size)
 {
@@ -967,7 +974,7 @@ realloc_wrap (void *ptr, size_t size)
       MEM_ALLOC_FAIL ();
     return p;
 }
-
+#else
 static void *
 malloc_wrap_debug (size_t size, const char *file, unsigned int line)
 {
@@ -994,6 +1001,7 @@ realloc_wrap_debug (void *ptr, size_t size, const char *file, unsigned int line)
       MEM_ALLOC_FAIL_DEBUG (file, line);
     return p;
 }
+#endif
 
 static void
 free_wrap (void **ptr)
