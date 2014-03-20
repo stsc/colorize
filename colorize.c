@@ -44,14 +44,14 @@
 
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
 
-#if DEBUG
-# define xmalloc(size)        malloc_wrap_debug(size,        __FILE__, __LINE__)
-# define xcalloc(nmemb, size) calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
-# define xrealloc(ptr, size)  realloc_wrap_debug(ptr, size,  __FILE__, __LINE__)
-#else
+#if !DEBUG
 # define xmalloc(size)        malloc_wrap(size)
 # define xcalloc(nmemb, size) calloc_wrap(nmemb, size)
 # define xrealloc(ptr, size)  realloc_wrap(ptr, size)
+#else
+# define xmalloc(size)        malloc_wrap_debug(size,        __FILE__, __LINE__)
+# define xcalloc(nmemb, size) calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
+# define xrealloc(ptr, size)  realloc_wrap_debug(ptr, size,  __FILE__, __LINE__)
 #endif
 
 #define free_null(ptr) free_wrap((void **)&ptr)
@@ -79,15 +79,15 @@
     release_var (vars_list, stacked_vars, (void **)&ptr); \
 } while (false)
 
-#if DEBUG
-# define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                              \
-    fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
-    exit (2);                                                                               \
-} while (false)
-#else
+#if !DEBUG
 # define MEM_ALLOC_FAIL() do {                                         \
     fprintf (stderr, "%s: memory allocation failure\n", program_name); \
     exit (2);                                                          \
+} while (false)
+#else
+# define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                              \
+    fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
+    exit (2);                                                                               \
 } while (false)
 #endif
 
