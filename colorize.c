@@ -507,14 +507,15 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
 
         if (have_file)
           {
+            const char *file_exists = color_string;
             if (file_string)
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "cannot be used as color string");
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "cannot be used as color string");
             else
               {
                 if (VALID_FILE_TYPE (mode))
-                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "must be preceeded by color string");
+                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceeded by color string");
                 else
-                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), color_string, "is not a valid file type");
+                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "is not a valid file type");
               }
           }
       }
