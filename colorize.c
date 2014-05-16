@@ -626,7 +626,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
             FILE *s;
             const char *file = file_string;
             struct stat sb;
-            int errno, ret;
+            int ret;
 
             errno = 0;
             ret = lstat (file, &sb);
