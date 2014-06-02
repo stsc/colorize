@@ -102,7 +102,7 @@
 
 #define COLOR_SEP_CHAR '/'
 
-#define VERSION "0.53"
+#define VERSION "0.54"
 
 typedef enum { false, true } bool;
 
