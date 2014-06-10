@@ -57,7 +57,7 @@
 #define free_null(ptr) free_wrap((void **)&ptr)
 #define xstrdup(str)   strdup_wrap(str)
 
-#if BUF_SIZE <= 0
+#if BUF_SIZE <= 0 || BUF_SIZE > 65536
 # undef BUF_SIZE
 #endif
 #ifndef BUF_SIZE
@@ -143,6 +143,11 @@ static const struct color bg_colors[] = {
     { "default", "49m" },
 };
 
+struct bytes_size {
+    unsigned int size;
+    char unit;
+};
+
 enum fmts {
     FMT_GENERIC,
     FMT_STRING,
@@ -212,6 +217,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *);
 static char *str_concat (const char *, const char *);
+static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
 static void vfprintf_diag (const char *, ...);
@@ -398,6 +404,7 @@ static void
 print_version (void)
 {
     const char *c_flags;
+    struct bytes_size bytes_size;
     bool debug;
 #ifdef CFLAGS
     c_flags = to_str (CFLAGS);
@@ -411,7 +418,16 @@ print_version (void)
 #endif
     printf ("%s v%s (compiled at %s, %s)\n", "colorize", VERSION, __DATE__, __TIME__);
     printf ("Compiler flags: %s\n", c_flags);
-    printf ("Buffer size: %u bytes\n", BUF_SIZE);
+    if (get_bytes_size (BUF_SIZE, &bytes_size))
+      {
+        if (BUF_SIZE % 1024 == 0)
+          printf ("Buffer size: %u%c\n", bytes_size.size, bytes_size.unit);
+        else
+          printf ("Buffer size: %u%c, %u byte%s\n", bytes_size.size, bytes_size.unit,
+                   BUF_SIZE % 1024, BUF_SIZE % 1024 > 1 ? "s" : "");
+      }
+    else
+      printf ("Buffer size: %lu byte%s\n", (unsigned long)BUF_SIZE, BUF_SIZE > 1 ? "s" : "");
     printf ("Debugging: %s\n", debug ? "yes" : "no");
 }
 
@@ -1034,6 +1050,24 @@ str_concat (const char *str1, const char *str2)
     *p = '\0';
 
     return str;
+}
+
+static bool
+get_bytes_size (unsigned long bytes, struct bytes_size *bytes_size)
+{
+    const char *unit, units[] = { '0', 'K', 'M', 'G', '\0' };
+    unsigned long size = bytes;
+    if (bytes < 1024)
+      return false;
+    unit = units;
+    while (size >= 1024 && *(unit + 1))
+      {
+        size /= 1024;
+        unit++;
+      }
+    bytes_size->size = (unsigned int)size;
+    bytes_size->unit = *unit;
+    return true;
 }
 
 static char *
