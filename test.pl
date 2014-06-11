@@ -10,7 +10,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 23;
+my $tests = 24;
 
 my %BUF_SIZE = (
    normal => 1024,
@@ -42,7 +42,8 @@ SKIP: {
     my $program = tmpnam();
     skip 'compiling failed (normal)', $tests unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{normal} -o $program $source") == 0;
 
-    is(system("$program --help >/dev/null 2>&1"), 0, 'exit value for help screen');
+    is(system("$program --help >/dev/null 2>&1"),    0, 'exit value for help screen');
+    is(system("$program --version >/dev/null 2>&1"), 0, 'exit value for version data');
 
     my $run_program_fail = sub
     {
