@@ -8,10 +8,11 @@ CC=gcc
 CFLAGS=-ansi -pedantic
 
 colorize:	colorize.c
-			$(CC) $(CFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)"
+			perl ./version.pl > version.h
+			$(CC) $(CFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)" -DHAVE_VERSION
 
 check:
 			perl ./test.pl
 
 clean:
-			[ -e colorize ] && rm colorize; exit 0
+			rm -f colorize version.h

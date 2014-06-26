@@ -403,6 +403,11 @@ print_help (void)
 static void
 print_version (void)
 {
+#ifdef HAVE_VERSION
+# include "version.h"
+#else
+    const char *version = NULL;
+#endif
     const char *c_flags;
     struct bytes_size bytes_size;
     bool debug;
@@ -416,7 +421,10 @@ print_version (void)
 #else
     debug = false;
 #endif
-    printf ("%s v%s (compiled at %s, %s)\n", "colorize", VERSION, __DATE__, __TIME__);
+    if (version)
+      printf ("colorize %s (compiled at %s, %s)\n", version, __DATE__, __TIME__);
+    else
+      printf ("colorize v%s (compiled at %s, %s)\n", VERSION, __DATE__, __TIME__);
     printf ("Compiler flags: %s\n", c_flags);
     if (get_bytes_size (BUF_SIZE, &bytes_size))
       {
