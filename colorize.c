@@ -1026,7 +1026,7 @@ realloc_wrap_debug (void *ptr, size_t size, const char *file, unsigned int line)
       MEM_ALLOC_FAIL_DEBUG (file, line);
     return p;
 }
-#endif
+#endif /* !DEBUG */
 
 static void
 free_wrap (void **ptr)
