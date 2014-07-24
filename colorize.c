@@ -408,6 +408,7 @@ print_version (void)
 #else
     const char *version = NULL;
 #endif
+    const char *version_prefix, *version_string;
     const char *c_flags;
     struct bytes_size bytes_size;
     bool debug;
@@ -421,10 +422,10 @@ print_version (void)
 #else
     debug = false;
 #endif
-    if (version)
-      printf ("colorize %s (compiled at %s, %s)\n", version, __DATE__, __TIME__);
-    else
-      printf ("colorize v%s (compiled at %s, %s)\n", VERSION, __DATE__, __TIME__);
+    version_prefix = version ? "" : "v";
+    version_string = version ? version : VERSION;
+    printf ("colorize %s%s (compiled at %s, %s)\n", version_prefix, version_string, __DATE__, __TIME__);
+
     printf ("Compiler flags: %s\n", c_flags);
     if (get_bytes_size (BUF_SIZE, &bytes_size))
       {
