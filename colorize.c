@@ -82,12 +82,12 @@
 #if !DEBUG
 # define MEM_ALLOC_FAIL() do {                                         \
     fprintf (stderr, "%s: memory allocation failure\n", program_name); \
-    exit (2);                                                          \
+    exit (EXIT_FAILURE);                                               \
 } while (false)
 #else
 # define MEM_ALLOC_FAIL_DEBUG(file, line) do {                                              \
     fprintf (stderr, "Memory allocation failure in source file %s, line %u\n", file, line); \
-    exit (2);                                                                               \
+    exit (EXIT_FAILURE);                                                                    \
 } while (false)
 #endif
 
