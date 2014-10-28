@@ -45,17 +45,20 @@
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
 
 #if !DEBUG
-# define xmalloc(size)        malloc_wrap(size)
-# define xcalloc(nmemb, size) calloc_wrap(nmemb, size)
-# define xrealloc(ptr, size)  realloc_wrap(ptr, size)
+# define xmalloc(size)          malloc_wrap(size)
+# define xcalloc(nmemb, size)   calloc_wrap(nmemb, size)
+# define xrealloc(ptr, size)    realloc_wrap(ptr, size)
+# define xstrdup(str)           strdup_wrap(str,            NULL, 0)
+# define str_concat(str1, str2) str_concat_wrap(str1, str2, NULL, 0)
 #else
-# define xmalloc(size)        malloc_wrap_debug(size,        __FILE__, __LINE__)
-# define xcalloc(nmemb, size) calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
-# define xrealloc(ptr, size)  realloc_wrap_debug(ptr, size,  __FILE__, __LINE__)
+# define xmalloc(size)          malloc_wrap_debug(size,        __FILE__, __LINE__)
+# define xcalloc(nmemb, size)   calloc_wrap_debug(nmemb, size, __FILE__, __LINE__)
+# define xrealloc(ptr, size)    realloc_wrap_debug(ptr, size,  __FILE__, __LINE__)
+# define xstrdup(str)           strdup_wrap(str,               __FILE__, __LINE__)
+# define str_concat(str1, str2) str_concat_wrap(str1, str2,    __FILE__, __LINE__)
 #endif
 
 #define free_null(ptr) free_wrap((void **)&ptr)
-#define xstrdup(str)   strdup_wrap(str)
 
 #if BUF_SIZE <= 0 || BUF_SIZE > 65536
 # undef BUF_SIZE
@@ -215,8 +218,8 @@ static void *calloc_wrap_debug (size_t, size_t, const char *, unsigned int);
 static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 #endif
 static void free_wrap (void **);
-static char *strdup_wrap (const char *);
-static char *str_concat (const char *, const char *);
+static char *strdup_wrap (const char *, const char *, unsigned int);
+static char *str_concat_wrap (const char *, const char *, const char *, unsigned int);
 static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
@@ -1039,22 +1042,28 @@ free_wrap (void **ptr)
     *ptr = NULL;
 }
 
+#if !DEBUG
+# define do_malloc(len, file, line) malloc_wrap(len)
+#else
+# define do_malloc(len, file, line) malloc_wrap_debug(len, file, line)
+#endif
+
 static char *
-strdup_wrap (const char *str)
+strdup_wrap (const char *str, const char *file, unsigned int line)
 {
     const size_t len = strlen (str) + 1;
-    char *p = xmalloc (len);
+    char *p = do_malloc (len, file, line);
     strncpy (p, str, len);
     return p;
 }
 
 static char *
-str_concat (const char *str1, const char *str2)
+str_concat_wrap (const char *str1, const char *str2, const char *file, unsigned int line)
 {
     const size_t len = strlen (str1) + strlen (str2) + 1;
     char *p, *str;
 
-    p = str = xmalloc (len);
+    p = str = do_malloc (len, file, line);
     strncpy (p, str1, strlen (str1));
     p += strlen (str1);
     strncpy (p, str2, strlen (str2));
