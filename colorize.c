@@ -60,7 +60,7 @@
 
 #define free_null(ptr) free_wrap((void **)&ptr)
 
-#if BUF_SIZE <= 0 || BUF_SIZE > 65536
+#if defined(BUF_SIZE) && (BUF_SIZE <= 0 || BUF_SIZE > 65536)
 # undef BUF_SIZE
 #endif
 #ifndef BUF_SIZE
