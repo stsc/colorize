@@ -10,7 +10,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 24;
+my $tests = 25;
 
 my %BUF_SIZE = (
    normal => 1024,
@@ -170,6 +170,12 @@ SKIP: {
     SKIP: {
         skip 'valgrind not found', 1 unless system('which valgrind >/dev/null 2>&1') == 0;
         like(qx(valgrind $program none/none $infile1 2>&1 >/dev/null), qr/no leaks are possible/, 'valgrind memleaks');
+    }
+
+    {
+        my $debug = tmpnam();
+        is(system("gcc -DDEBUG -o $debug $source"), 0, 'debugging build');
+        unlink $debug if -e $debug;
     }
 
     print <<'EOT';
