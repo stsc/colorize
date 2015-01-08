@@ -499,7 +499,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
 
     /* Ensure that we don't fail if there's a file with one or more
        color names in its path.  */
-    if (ret != -1)
+    if (ret == 0) /* success */
       {
         bool have_file;
         unsigned int c;
