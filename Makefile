@@ -16,4 +16,4 @@ check:
 			perl ./test.pl
 
 clean:
-			rm -f colorize version.h
+			rm -f colorize debug.txt version.h

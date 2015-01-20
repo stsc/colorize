@@ -106,6 +106,8 @@
 
 #define COLOR_SEP_CHAR '/'
 
+#define DEBUG_FILE "debug.txt"
+
 #define VERSION "0.54"
 
 typedef enum { false, true } bool;
@@ -185,6 +187,9 @@ static const struct {
 };
 
 static FILE *stream = NULL;
+#if DEBUG
+static FILE *log = NULL;
+#endif
 
 static unsigned int stacked_vars = 0;
 static void **vars_list = NULL;
@@ -224,6 +229,7 @@ static char *str_concat_wrap (const char *, const char *, const char *, unsigned
 static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
+static FILE *open_file (const char *, const char *);
 static void vfprintf_diag (const char *, ...);
 static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
@@ -275,6 +281,10 @@ main (int argc, char **argv)
     atexit (cleanup);
 
     setvbuf (stdout, NULL, _IOLBF, 0);
+
+#if DEBUG
+    log = open_file (DEBUG_FILE, "w");
+#endif
 
     while ((opt = getopt_long (argc, argv, "hv", long_opts, NULL)) != -1)
       {
@@ -451,6 +461,10 @@ cleanup (void)
 
     if (stream && fileno (stream) != STDIN_FILENO)
       fclose (stream);
+#if DEBUG
+    if (log)
+      fclose (log);
+#endif
 
     if (vars_list)
       {
@@ -1011,7 +1025,7 @@ malloc_wrap_debug (size_t size, const char *file, unsigned int line)
     void *p = malloc (size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    vfprintf_diag ("malloc'ed %lu bytes [source file %s, line %u]", (unsigned long)size, file, line);
+    fprintf (log, "%s: malloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)size, file, line);
     return p;
 }
 
@@ -1021,7 +1035,7 @@ calloc_wrap_debug (size_t nmemb, size_t size, const char *file, unsigned int lin
     void *p = calloc (nmemb, size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    vfprintf_diag ("calloc'ed %lu bytes [source file %s, line %u]", (unsigned long)(nmemb * size), file, line);
+    fprintf (log, "%s: calloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)(nmemb * size), file, line);
     return p;
 }
 
@@ -1031,7 +1045,7 @@ realloc_wrap_debug (void *ptr, size_t size, const char *file, unsigned int line)
     void *p = realloc (ptr, size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    vfprintf_diag ("realloc'ed %lu bytes [source file %s, line %u]", (unsigned long)size, file, line);
+    fprintf (log, "%s: realloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)size, file, line);
     return p;
 }
 #endif /* !DEBUG */
@@ -1128,6 +1142,19 @@ has_color_name (const char *str, const char *name)
       return false;
 
     return true;
+}
+
+static FILE *
+open_file (const char *file, const char *mode)
+{
+    FILE *stream;
+
+    errno = 0;
+    stream = fopen (file, mode);
+    if (!stream)
+      vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
+
+    return stream;
 }
 
 #define DO_VFPRINTF(fmt)                    \
