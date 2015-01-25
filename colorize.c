@@ -666,7 +666,6 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
           *stream = stdin;
         else
           {
-            FILE *s;
             const char *file = file_string;
             struct stat sb;
             int ret;
@@ -680,12 +679,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
             if (!VALID_FILE_TYPE (sb.st_mode))
               vfprintf_fail (formats[FMT_TYPE], file, "unrecognized type", get_file_type (sb.st_mode));
 
-            errno = 0;
-
-            s = fopen (file, "r");
-            if (!s)
-              vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
-            *stream = s;
+            *stream = open_file (file, "r");
           }
         *file = file_string;
       }
