@@ -671,7 +671,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
             int ret;
 
             errno = 0;
-            ret = lstat (file, &sb);
+            ret = stat (file, &sb);
 
             if (ret == -1)
               vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
