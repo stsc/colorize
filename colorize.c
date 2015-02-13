@@ -610,7 +610,6 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
                   break;
                 case BACKGROUND:
                   vfprintf_fail (formats[FMT_COLOR], tables[BACKGROUND].desc, color, "cannot be bold");
-                  break;
                 default: /* never reached */
                   ABORT_TRACE ();
               }
