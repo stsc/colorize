@@ -471,7 +471,7 @@ cleanup (void)
         unsigned int i;
         for (i = 0; i < stacked_vars; i++)
           if (vars_list[i])
-            free_null (vars_list[i]);
+            free (vars_list[i]);
 
         free_null (vars_list);
       }
@@ -483,8 +483,8 @@ free_color_names (struct color_name **color_names)
     unsigned int i;
     for (i = 0; color_names[i]; i++)
       {
-        free_null (color_names[i]->name);
-        free_null (color_names[i]->orig);
+        free (color_names[i]->name);
+        free (color_names[i]->orig);
         free_null (color_names[i]);
       }
 }
@@ -980,7 +980,7 @@ print_free_offsets (const char *line, char ***offsets, unsigned int count)
           RESTORE_CHAR (offsets[i + 1][0], ch);
       }
     for (i = 0; i < count; i++)
-      free_null (offsets[i]);
+      free (offsets[i]);
     free_null (offsets);
 }
 
