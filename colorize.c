@@ -286,7 +286,7 @@ main (int argc, char **argv)
     log = open_file (DEBUG_FILE, "w");
 #endif
 
-    while ((opt = getopt_long (argc, argv, "hv", long_opts, NULL)) != -1)
+    while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
       {
         PARSE_OPT:
         switch (opt)
@@ -330,7 +330,7 @@ main (int argc, char **argv)
               break;
             case 'h':
               SET_OPT_TYPE (OPT_HELP);
-            case 'v':
+            case 'V':
               SET_OPT_TYPE (OPT_VERSION);
             case '?':
               print_hint ();
@@ -411,7 +411,7 @@ print_help (void)
     printf ("\t\t    --clean-all\n");
     printf ("\t\t    --exclude-random\n");
     printf ("\t\t-h, --help\n");
-    printf ("\t\t-v, --version\n\n");
+    printf ("\t\t-V, --version\n\n");
 }
 
 static void
