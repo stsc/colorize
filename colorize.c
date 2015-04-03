@@ -632,11 +632,11 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
     if (color_names[BACKGROUND])
       {
         unsigned int i;
-        unsigned int color_sets[2][2] = { { FOREGROUND, BACKGROUND }, { BACKGROUND, FOREGROUND } };
+        const unsigned int color_sets[2][2] = { { FOREGROUND, BACKGROUND }, { BACKGROUND, FOREGROUND } };
         for (i = 0; i < 2; i++)
           {
-            unsigned int color1 = color_sets[i][0];
-            unsigned int color2 = color_sets[i][1];
+            const unsigned int color1 = color_sets[i][0];
+            const unsigned int color2 = color_sets[i][1];
             if (CHECK_COLORS_RANDOM (color1, color2))
               vfprintf_fail (formats[FMT_RANDOM], tables[color1].desc, color_names[color1]->orig, "cannot be combined with", color_names[color2]->orig);
           }
