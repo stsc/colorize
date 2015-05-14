@@ -213,7 +213,17 @@ static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (bool, const struct color **, const char * const, unsigned int);
 static void print_clean (const char *);
-static void print_free_offsets (const char *, char ***, unsigned int);
+static bool is_esc (const char *);
+static const char *get_end_of_esc (const char *);
+static const char *get_end_of_text (const char *);
+static void print_text (const char *, size_t);
+static bool gather_esc_offsets (const char *, const char **, const char **);
+static bool validate_esc_clean_all (const char **);
+static bool validate_esc_clean (int, unsigned int, const char **, bool *);
+static bool is_reset (int, unsigned int, const char **);
+static bool is_bold (int, unsigned int, const char **);
+static bool is_fg_color (int, const char **);
+static bool is_bg_color (int, unsigned int, const char **);
 #if !DEBUG
 static void *malloc_wrap (size_t);
 static void *calloc_wrap (size_t, size_t);
@@ -852,136 +862,164 @@ print_line (bool bold, const struct color **colors, const char *const line, unsi
 static void
 print_clean (const char *line)
 {
-    const char *p;
-    char ***offsets = NULL;
-    unsigned int count = 0, i = 0;
+    const char *p = line;
 
-    for (p = line; *p;)
+    if (is_esc (p))
+      p = get_end_of_esc (p);
+
+    while (*p != '\0')
       {
-        /* ESC[ */
-        if (*p == 27 && *(p + 1) == '[')
-          {
-            const char *begin = p;
-            p += 2;
-            if (clean_all)
-              {
-                while (isdigit (*p) || *p == ';')
-                  p++;
-              }
-            else if (clean)
-              {
-                bool check_values;
-                unsigned int iter = 0;
-                const char *digit;
-                do {
-                  check_values = false;
-                  iter++;
-                  if (!isdigit (*p))
-                    goto DISCARD;
-                  digit = p;
-                  while (isdigit (*p))
-                    p++;
-                  if (p - digit > 2)
-                    goto DISCARD;
-                  else /* check range */
-                    {
-                      char val[3];
-                      int value;
-                      unsigned int i;
-                      const unsigned int digits = p - digit;
-                      for (i = 0; i < digits; i++)
-                        val[i] = *digit++;
-                      val[i] = '\0';
-                      value = atoi (val);
-                      if (value == 0) /* reset */
-                        {
-                          if (iter > 1)
-                            goto DISCARD;
-                          goto END;
-                        }
-                      else if (value == 1) /* bold */
-                        {
-                          bool discard = false;
-                          if (iter > 1)
-                            discard = true;
-                          else if (*p != ';')
-                            discard = true;
-                          if (discard)
-                            goto DISCARD;
-                          p++;
-                          check_values = true;
-                        }
-                      else if ((value >= 30 && value <= 37) || value == 39) /* foreground colors */
-                        goto END;
-                      else if ((value >= 40 && value <= 47) || value == 49) /* background colors */
-                        {
-                          if (iter > 1)
-                            goto DISCARD;
-                          goto END;
-                        }
-                      else
-                        goto DISCARD;
-                    }
-                } while (iter == 1 && check_values);
-              }
-            END: if (*p == 'm')
-              {
-                const char *end = p++;
-                if (!offsets)
-                  offsets = xmalloc (++count * sizeof (char **));
-                else
-                  offsets = xrealloc (offsets, ++count * sizeof (char **));
-                offsets[i] = xmalloc (2 * sizeof (char *));
-                offsets[i][0] = (char *)begin; /* ESC */
-                offsets[i][1] = (char *)end;   /* m */
-                i++;
-                continue;
-              }
-            DISCARD:
-              continue;
-          }
-        p++;
+        const char *text_start = p;
+        const char *text_end = get_end_of_text (p);
+        print_text (text_start, text_end - text_start);
+        p = get_end_of_esc (text_end);
       }
-
-    if (offsets)
-      print_free_offsets (line, offsets, count);
-    else
-      printf (formats[FMT_GENERIC], line);
 }
 
-#define SET_CHAR(offset, new, old) \
-    *old = *offset;                \
-    *offset = new;                 \
+static bool
+is_esc (const char *p)
+{
+    return gather_esc_offsets (p, NULL, NULL);
+}
 
-#define RESTORE_CHAR(offset, old)  \
-    *offset = old;                 \
+static const char *
+get_end_of_esc (const char *p)
+{
+    const char *esc;
+    const char *end = NULL;
+    while ((esc = strchr (p, '\033')))
+      {
+        if (gather_esc_offsets (esc, NULL, &end))
+          break;
+        p = esc + 1;
+      }
+    return end ? end + 1 : p + strlen (p);
+}
+
+static const char *
+get_end_of_text (const char *p)
+{
+    const char *esc;
+    const char *start = NULL;
+    while ((esc = strchr (p, '\033')))
+      {
+        if (gather_esc_offsets (esc, &start, NULL))
+          break;
+        p = esc + 1;
+      }
+    return start ? start : p + strlen (p);
+}
 
 static void
-print_free_offsets (const char *line, char ***offsets, unsigned int count)
+print_text (const char *p, size_t len)
 {
-    char ch;
-    unsigned int i;
+    size_t bytes_written;
+    bytes_written = fwrite (p, 1, len, stdout);
+    if (bytes_written != len)
+      vfprintf_fail (formats[FMT_ERROR], len, "written");
+}
 
-    SET_CHAR (offsets[0][0], '\0', &ch);
-    printf (formats[FMT_GENERIC], line);
-    RESTORE_CHAR (offsets[0][0], ch);
-
-    for (i = 0; i < count; i++)
+static bool
+gather_esc_offsets (const char *p, const char **start, const char **end)
+{
+    /* ESC[ */
+    if (*p == 27 && *(p + 1) == '[')
       {
-        char ch;
-        bool next_offset = false;
-        if (i + 1 < count)
+        bool valid = false;
+        const char *begin = p;
+        p += 2;
+        if (clean_all)
+          valid = validate_esc_clean_all (&p);
+        else if (clean)
           {
-            SET_CHAR (offsets[i + 1][0], '\0', &ch);
-            next_offset = true;
+            bool check_values;
+            unsigned int iter = 0;
+            const char *digit;
+            do {
+              check_values = false;
+              iter++;
+              if (!isdigit (*p))
+                break;
+              digit = p;
+              while (isdigit (*p))
+                p++;
+              if (p - digit > 2)
+                break;
+              else /* check range */
+                {
+                  char val[3];
+                  int value;
+                  unsigned int i;
+                  const unsigned int digits = p - digit;
+                  for (i = 0; i < digits; i++)
+                    val[i] = *digit++;
+                  val[i] = '\0';
+                  value = atoi (val);
+                  valid = validate_esc_clean (value, iter, &p, &check_values);
+                }
+            } while (check_values);
           }
-        printf (formats[FMT_GENERIC], offsets[i][1] + 1);
-        if (next_offset)
-          RESTORE_CHAR (offsets[i + 1][0], ch);
+        if (valid)
+          {
+            if (start)
+              *start = begin;
+            if (end)
+              *end = p;
+            return true;
+          }
       }
-    for (i = 0; i < count; i++)
-      free (offsets[i]);
-    free_null (offsets);
+    return false;
+}
+
+static bool
+validate_esc_clean_all (const char **p)
+{
+    while (isdigit (**p) || **p == ';')
+      (*p)++;
+    return (**p == 'm');
+}
+
+static bool
+validate_esc_clean (int value, unsigned int iter, const char **p, bool *check_values)
+{
+    if (is_reset (value, iter, p))
+      return true;
+    else if (is_bold (value, iter, p))
+      {
+        (*p)++;
+        *check_values = true;
+        return false; /* partial escape sequence, need another valid value */
+      }
+    else if (is_fg_color (value, p))
+      return true;
+    else if (is_bg_color (value, iter, p))
+      return true;
+    else
+      return false;
+}
+
+static bool
+is_reset (int value, unsigned int iter, const char **p)
+{
+    return (value == 0 && iter == 1 && **p == 'm');
+}
+
+static bool
+is_bold (int value, unsigned int iter, const char **p)
+{
+    return (value == 1 && iter == 1 && **p == ';');
+}
+
+static bool
+is_fg_color (int value, const char **p)
+{
+    return (((value >= 30 && value <= 37) || value == 39) && **p == 'm');
+}
+
+static bool
+is_bg_color (int value, unsigned int iter, const char **p)
+{
+    return (((value >= 40 && value <= 47) || value == 49) && iter == 1 && **p == 'm');
 }
 
 #if !DEBUG
