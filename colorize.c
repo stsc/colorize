@@ -165,14 +165,14 @@ enum fmts {
     FMT_TYPE
 };
 static const char *formats[] = {
-    "%s",                    /* generic */
-    "%s '%s'",               /* string  */
-    "%s `%s' %s",            /* quote   */
-    "%s color '%s' %s",      /* color   */
-    "%s color '%s' %s '%s'", /* random  */
-    "less than %u bytes %s", /* error   */
-    "%s: %s",                /* file    */
-    "%s: %s: %s",            /* type    */
+    "%s",                     /* generic */
+    "%s '%s'",                /* string  */
+    "%s `%s' %s",             /* quote   */
+    "%s color '%s' %s",       /* color   */
+    "%s color '%s' %s '%s'",  /* random  */
+    "less than %lu bytes %s", /* error   */
+    "%s: %s",                 /* file    */
+    "%s: %s: %s",             /* type    */
 };
 
 enum { FOREGROUND, BACKGROUND };
@@ -916,7 +916,7 @@ print_text (const char *p, size_t len)
     size_t bytes_written;
     bytes_written = fwrite (p, 1, len, stdout);
     if (bytes_written != len)
-      vfprintf_fail (formats[FMT_ERROR], len, "written");
+      vfprintf_fail (formats[FMT_ERROR], (unsigned long)len, "written");
 }
 
 static bool
