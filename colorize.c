@@ -186,18 +186,18 @@ static const struct {
     { bg_colors, sizeof (bg_colors) / sizeof (struct color), "background" },
 };
 
-static FILE *stream = NULL;
+static FILE *stream;
 #if DEBUG
-static FILE *log = NULL;
+static FILE *log;
 #endif
 
-static unsigned int stacked_vars = 0;
-static void **vars_list = NULL;
+static unsigned int stacked_vars;
+static void **vars_list;
 
-static bool clean = false;
-static bool clean_all = false;
+static bool clean;
+static bool clean_all;
 
-static char *exclude = NULL;
+static char *exclude;
 
 static const char *program_name;
 
@@ -253,7 +253,7 @@ static void release_var (void **, unsigned int, void **);
 extern char *optarg;
 extern int optind;
 
-static int opt_type = 0;
+static int opt_type;
 
 int
 main (int argc, char **argv)
