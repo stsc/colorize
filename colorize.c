@@ -201,6 +201,7 @@ static char *exclude;
 
 static const char *program_name;
 
+static void process_opts (int, char **);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
@@ -245,38 +246,12 @@ static void vfprintf_fail (const char *, ...);
 static void stack_var (void ***, unsigned int *, unsigned int, void *);
 static void release_var (void **, unsigned int, void **);
 
-#define SET_OPT_TYPE(type) \
-    opt_type = type;       \
-    opt = 0;               \
-    goto PARSE_OPT;        \
-
-extern char *optarg;
 extern int optind;
-
-static int opt_type;
 
 int
 main (int argc, char **argv)
 {
     unsigned int arg_cnt = 0;
-
-    enum {
-        OPT_CLEAN = 1,
-        OPT_CLEAN_ALL,
-        OPT_EXCLUDE_RANDOM,
-        OPT_HELP,
-        OPT_VERSION
-    };
-
-    int opt;
-    struct option long_opts[] = {
-        { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
-        { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
-        { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
-        { "help",           no_argument,       &opt_type, OPT_HELP           },
-        { "version",        no_argument,       &opt_type, OPT_VERSION        },
-        {  NULL,            0,                 NULL,      0                  },
-    };
 
     bool bold = false;
 
@@ -295,6 +270,74 @@ main (int argc, char **argv)
 #if DEBUG
     log = open_file (DEBUG_FILE, "w");
 #endif
+
+    process_opts (argc, argv);
+
+    arg_cnt = argc - optind;
+
+    if (clean || clean_all)
+      {
+        if (clean && clean_all)
+          vfprintf_fail (formats[FMT_GENERIC], "--clean and --clean-all switch are mutually exclusive");
+        if (arg_cnt > 1)
+          {
+            const char *format = "%s %s";
+            const char *message = "switch cannot be used with more than one file";
+            if (clean)
+              vfprintf_fail (format, "--clean", message);
+            else if (clean_all)
+              vfprintf_fail (format, "--clean-all", message);
+          }
+      }
+    else
+      {
+        if (arg_cnt == 0 || arg_cnt > 2)
+          {
+            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or clean option", arg_cnt);
+            print_hint ();
+            exit (EXIT_FAILURE);
+          }
+      }
+
+    if (clean || clean_all)
+      process_file_arg (argv[optind], &file, &stream);
+    else
+      process_args (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
+    read_print_stream (bold, colors, file, stream);
+
+    RELEASE_VAR (exclude);
+
+    exit (EXIT_SUCCESS);
+}
+
+#define SET_OPT_TYPE(type) \
+    opt_type = type;       \
+    opt = 0;               \
+    goto PARSE_OPT;        \
+
+extern char *optarg;
+static int opt_type;
+
+static void
+process_opts (int argc, char **argv)
+{
+    enum {
+        OPT_CLEAN = 1,
+        OPT_CLEAN_ALL,
+        OPT_EXCLUDE_RANDOM,
+        OPT_HELP,
+        OPT_VERSION
+    };
+
+    int opt;
+    struct option long_opts[] = {
+        { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
+        { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
+        { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
+        { "help",           no_argument,       &opt_type, OPT_HELP           },
+        { "version",        no_argument,       &opt_type, OPT_VERSION        },
+        {  NULL,            0,                 NULL,      0                  },
+    };
 
     while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
       {
@@ -349,42 +392,6 @@ main (int argc, char **argv)
               ABORT_TRACE ();
           }
       }
-
-    arg_cnt = argc - optind;
-
-    if (clean || clean_all)
-      {
-        if (clean && clean_all)
-          vfprintf_fail (formats[FMT_GENERIC], "--clean and --clean-all switch are mutually exclusive");
-        if (arg_cnt > 1)
-          {
-            const char *format = "%s %s";
-            const char *message = "switch cannot be used with more than one file";
-            if (clean)
-              vfprintf_fail (format, "--clean", message);
-            else if (clean_all)
-              vfprintf_fail (format, "--clean-all", message);
-          }
-      }
-    else
-      {
-        if (arg_cnt == 0 || arg_cnt > 2)
-          {
-            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or clean option", arg_cnt);
-            print_hint ();
-            exit (EXIT_FAILURE);
-          }
-      }
-
-    if (clean || clean_all)
-      process_file_arg (argv[optind], &file, &stream);
-    else
-      process_args (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
-    read_print_stream (bold, colors, file, stream);
-
-    RELEASE_VAR (exclude);
-
-    exit (EXIT_SUCCESS);
 }
 
 static void
