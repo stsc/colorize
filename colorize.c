@@ -210,6 +210,10 @@ static void free_color_names (struct color_name **);
 static void process_args (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
 static void process_file_arg (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
+static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
+static void complete_part_line (const char *, char **, FILE *);
+static bool get_next_char (char *, const char **, FILE *, bool *);
+static void save_char (char, char **, unsigned int *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (bool, const struct color **, const char * const, unsigned int);
@@ -709,23 +713,10 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
     assert (*file);
 }
 
-#define MERGE_PRINT_LINE(part_line, line, flags, check_eof) do { \
-    char *current_line, *merged_line = NULL;                     \
-    if (part_line)                                               \
-      {                                                          \
-        merged_line = str_concat (part_line, line);              \
-        free_null (part_line);                                   \
-      }                                                          \
-    current_line = merged_line ? merged_line : (char *)line;     \
-    if (!check_eof || *current_line != '\0')                     \
-      print_line (bold, colors, current_line, flags);            \
-    free (merged_line);                                          \
-} while (false)
-
 static void
 read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream)
 {
-    char buf[BUF_SIZE + 1], *part_line = NULL;
+    char buf[BUF_SIZE + 1];
     unsigned int flags = 0;
 
     while (!feof (stream))
@@ -754,26 +745,140 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
               vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
             p = eol + SKIP_LINE_ENDINGS (flags);
             *eol = '\0';
-            MERGE_PRINT_LINE (part_line, line, flags, false);
+            print_line (bold, colors, line, flags);
             line = p;
           }
         if (feof (stream)) {
-          MERGE_PRINT_LINE (part_line, line, 0, true);
+          if (*line != '\0')
+            print_line (bold, colors, line, 0);
         }
         else if (*line != '\0')
           {
-            if (!clean && !clean_all) /* efficiency */
-              print_line (bold, colors, line, 0);
-            else if (!part_line)
-              part_line = xstrdup (line);
+            char *p;
+            if ((clean || clean_all) && (p = strrchr (line, '\033')))
+              merge_print_line (bold, colors, line, p, stream);
             else
-              {
-                char *merged_line = str_concat (part_line, line);
-                free (part_line);
-                part_line = merged_line;
-              }
+              print_line (bold, colors, line, 0);
           }
       }
+}
+
+static void
+merge_print_line (bool bold, const struct color **colors, const char *line, const char *p, FILE *stream)
+{
+    char *buf = xmalloc (1);
+    char *merged_part_line = NULL;
+    const char *part_line;
+
+    *buf = '\0';
+    complete_part_line (p + 1, &buf, stream);
+
+    if (*buf != '\0')
+      part_line = merged_part_line = str_concat (line, buf);
+    else
+      part_line = line;
+    free (buf);
+
+#ifdef TEST_MERGE_PART_LINE
+    printf ("%s", part_line);
+    free (merged_part_line);
+    exit (EXIT_SUCCESS);
+#else
+    print_line (bold, colors, part_line, 0);
+    free (merged_part_line);
+#endif
+}
+
+static void
+complete_part_line (const char *p, char **buf, FILE *stream)
+{
+    bool got_next_char = false, read_from_stream;
+    char ch;
+    unsigned int i = 0;
+
+    if (get_next_char (&ch, &p, stream, &read_from_stream))
+      {
+        if (ch == '[')
+          {
+            if (read_from_stream)
+              save_char (ch, buf, &i);
+          }
+        else
+          {
+            if (read_from_stream)
+              ungetc ((int)ch, stream);
+            return; /* cancel */
+          }
+      }
+    else
+      return; /* cancel */
+
+    while (get_next_char (&ch, &p, stream, &read_from_stream))
+      {
+        if (isdigit (ch) || ch == ';')
+          {
+            if (read_from_stream)
+              save_char (ch, buf, &i);
+          }
+        else /* read next character */
+          {
+            got_next_char = true;
+            break;
+          }
+      }
+
+    if (got_next_char)
+      {
+        if (ch == 'm')
+          {
+            if (read_from_stream)
+              save_char (ch, buf, &i);
+          }
+        else
+          {
+            if (read_from_stream)
+              ungetc ((int)ch, stream);
+            return; /* cancel */
+          }
+      }
+    else
+      return; /* cancel */
+}
+
+static bool
+get_next_char (char *ch, const char **p, FILE *stream, bool *read_from_stream)
+{
+    if (**p == '\0')
+      {
+        int c;
+        if ((c = fgetc (stream)) != EOF)
+          {
+            *ch = (char)c;
+            *read_from_stream = true;
+            return true;
+          }
+        else
+          {
+            *read_from_stream = false;
+            return false;
+          }
+      }
+    else
+      {
+        *ch = **p;
+        (*p)++;
+        *read_from_stream = false;
+        return true;
+      }
+}
+
+static void
+save_char (char ch, char **buf, unsigned int *i)
+{
+    *buf = xrealloc (*buf, *i + 2); /* +1: size of buf, +1: space for NUL */
+    (*buf)[*i] = ch;
+    (*buf)[*i + 1] = '\0';
+    (*i)++;
 }
 
 static void
