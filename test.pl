@@ -8,6 +8,7 @@ use constant false => 0;
 use File::Temp qw(tempfile tempdir tmpnam);
 use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
+use TAP::Harness;
 use Test::More;
 
 my $tests = 25;
@@ -29,6 +30,12 @@ my $write_to_tmpfile = sub
 
     return $tmpfile;
 };
+
+{
+    my @tests = glob('t/*.t');
+    my $harness = TAP::Harness->new;
+    $harness->runtests(@tests);
+}
 
 plan tests => $tests;
 
