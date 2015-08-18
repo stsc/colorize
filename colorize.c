@@ -748,10 +748,11 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
             print_line (bold, colors, line, flags);
             line = p;
           }
-        if (feof (stream)) {
-          if (*line != '\0')
-            print_line (bold, colors, line, 0);
-        }
+        if (feof (stream))
+          {
+            if (*line != '\0')
+              print_line (bold, colors, line, 0);
+          }
         else if (*line != '\0')
           {
             char *p;
