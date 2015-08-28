@@ -213,7 +213,7 @@ static void read_print_stream (bool, const struct color **, const char *, FILE *
 static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
 static void complete_part_line (const char *, char **, FILE *);
 static bool get_next_char (char *, const char **, FILE *, bool *);
-static void save_char (char, char **, unsigned int *);
+static void save_char (char, char **, unsigned long *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (bool, const struct color **, const char * const, unsigned int);
@@ -795,7 +795,7 @@ complete_part_line (const char *p, char **buf, FILE *stream)
 {
     bool got_next_char = false, read_from_stream;
     char ch;
-    unsigned int i = 0;
+    unsigned long i = 0;
 
     if (get_next_char (&ch, &p, stream, &read_from_stream))
       {
@@ -874,7 +874,7 @@ get_next_char (char *ch, const char **p, FILE *stream, bool *read_from_stream)
 }
 
 static void
-save_char (char ch, char **buf, unsigned int *i)
+save_char (char ch, char **buf, unsigned long *i)
 {
     *buf = xrealloc (*buf, *i + 2); /* +1: size of buf, +1: space for NUL */
     (*buf)[*i] = ch;
