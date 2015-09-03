@@ -104,6 +104,8 @@
  && (streq (color_names[color2]->name, "none")     \
   || streq (color_names[color2]->name, "default")) \
 
+#define ALLOC_COMPLETE_PART_LINE 8
+
 #define COLOR_SEP_CHAR '/'
 
 #define DEBUG_FILE "debug.txt"
@@ -211,9 +213,9 @@ static void process_args (unsigned int, char **, bool *, const struct color **, 
 static void process_file_arg (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
-static void complete_part_line (const char *, char **, FILE *);
+static void complete_part_line (const char *, char **, size_t, FILE *);
 static bool get_next_char (char *, const char **, FILE *, bool *);
-static void save_char (char, char **, unsigned long *);
+static void save_char (char, char **, unsigned long *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (bool, const struct color **, const char * const, unsigned int);
@@ -767,12 +769,15 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
 static void
 merge_print_line (bool bold, const struct color **colors, const char *line, const char *p, FILE *stream)
 {
-    char *buf = xmalloc (1);
+    char *buf;
+    const size_t size = ALLOC_COMPLETE_PART_LINE;
     char *merged_part_line = NULL;
     const char *part_line;
 
+    buf = xmalloc (size);
     *buf = '\0';
-    complete_part_line (p + 1, &buf, stream);
+
+    complete_part_line (p + 1, &buf, size, stream);
 
     if (*buf != '\0')
       part_line = merged_part_line = str_concat (line, buf);
@@ -791,7 +796,7 @@ merge_print_line (bool bold, const struct color **colors, const char *line, cons
 }
 
 static void
-complete_part_line (const char *p, char **buf, FILE *stream)
+complete_part_line (const char *p, char **buf, size_t size, FILE *stream)
 {
     bool got_next_char = false, read_from_stream;
     char ch;
@@ -802,7 +807,7 @@ complete_part_line (const char *p, char **buf, FILE *stream)
         if (ch == '[')
           {
             if (read_from_stream)
-              save_char (ch, buf, &i);
+              save_char (ch, buf, &i, &size);
           }
         else
           {
@@ -819,7 +824,7 @@ complete_part_line (const char *p, char **buf, FILE *stream)
         if (isdigit (ch) || ch == ';')
           {
             if (read_from_stream)
-              save_char (ch, buf, &i);
+              save_char (ch, buf, &i, &size);
           }
         else /* read next character */
           {
@@ -833,7 +838,7 @@ complete_part_line (const char *p, char **buf, FILE *stream)
         if (ch == 'm')
           {
             if (read_from_stream)
-              save_char (ch, buf, &i);
+              save_char (ch, buf, &i, &size);
           }
         else
           {
@@ -874,9 +879,15 @@ get_next_char (char *ch, const char **p, FILE *stream, bool *read_from_stream)
 }
 
 static void
-save_char (char ch, char **buf, unsigned long *i)
+save_char (char ch, char **buf, unsigned long *i, size_t *size)
 {
-    *buf = xrealloc (*buf, *i + 2); /* +1: size of buf, +1: space for NUL */
+    assert (*i < *size);
+    /* +1: effective occupied size of buffer */
+    if ((*i + 1) == *size)
+      {
+        *size *= 2;
+        *buf = xrealloc (*buf, *size);
+      }
     (*buf)[*i] = ch;
     (*buf)[*i + 1] = '\0';
     (*i)++;
