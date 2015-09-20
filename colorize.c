@@ -213,7 +213,7 @@ static void process_args (unsigned int, char **, bool *, const struct color **, 
 static void process_file_arg (const char *, const char **, FILE **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
-static void complete_part_line (const char *, char **, size_t, FILE *);
+static void complete_part_line (const char *, char **, FILE *);
 static bool get_next_char (char *, const char **, FILE *, bool *);
 static void save_char (char, char **, unsigned long *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
@@ -769,17 +769,13 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
 static void
 merge_print_line (bool bold, const struct color **colors, const char *line, const char *p, FILE *stream)
 {
-    char *buf;
-    const size_t size = ALLOC_COMPLETE_PART_LINE;
+    char *buf = NULL;
     char *merged_part_line = NULL;
     const char *part_line;
 
-    buf = xmalloc (size);
-    *buf = '\0';
+    complete_part_line (p + 1, &buf, stream);
 
-    complete_part_line (p + 1, &buf, size, stream);
-
-    if (*buf != '\0')
+    if (buf)
       part_line = merged_part_line = str_concat (line, buf);
     else
       part_line = line;
@@ -796,11 +792,12 @@ merge_print_line (bool bold, const struct color **colors, const char *line, cons
 }
 
 static void
-complete_part_line (const char *p, char **buf, size_t size, FILE *stream)
+complete_part_line (const char *p, char **buf, FILE *stream)
 {
     bool got_next_char = false, read_from_stream;
     char ch;
     unsigned long i = 0;
+    size_t size;
 
     if (get_next_char (&ch, &p, stream, &read_from_stream))
       {
@@ -881,9 +878,13 @@ get_next_char (char *ch, const char **p, FILE *stream, bool *read_from_stream)
 static void
 save_char (char ch, char **buf, unsigned long *i, size_t *size)
 {
-    assert (*i < *size);
+    if (!*buf)
+      {
+        *size = ALLOC_COMPLETE_PART_LINE;
+        *buf = xmalloc (*size);
+      }
     /* +1: effective occupied size of buffer */
-    if ((*i + 1) == *size)
+    else if ((*i + 1) == *size)
       {
         *size *= 2;
         *buf = xrealloc (*buf, *size);
