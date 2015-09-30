@@ -8,6 +8,7 @@ use constant false => 0;
 use File::Temp qw(tempfile tempdir tmpnam);
 use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
+use Test::Harness qw(runtests);
 use Test::More;
 
 my $tests = 25;
@@ -29,6 +30,11 @@ my $write_to_tmpfile = sub
 
     return $tmpfile;
 };
+
+{
+    my @test_files = glob('t/*.t');
+    runtests(@test_files);
+}
 
 plan tests => $tests;
 
@@ -139,9 +145,9 @@ SKIP: {
 
         my $switch = "--$type";
 
-        # Check that line chunks are merged when cleaning text
+        # Check that line chunks are printed when cleaning text without sequences
         my $short_text = 'Linux dev 2.6.32-5-openvz-686 #1 SMP Sun Sep 23 11:40:07 UTC 2012 i686 GNU/Linux';
-        is(qx(echo -n "$short_text" | $program_buf $switch), $short_text, "merge ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short}, $type)");
+        is(qx(echo -n "$short_text" | $program_buf $switch), $short_text, "print ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short}, $type)");
     };
 
     SKIP: {
