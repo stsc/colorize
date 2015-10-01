@@ -33,7 +33,7 @@ my $write_to_tmpfile = sub
 
 {
     my @test_files = glob('t/*.t');
-    runtests(@test_files);
+    eval { runtests(@test_files) } or warn $@;
 }
 
 plan tests => $tests;
