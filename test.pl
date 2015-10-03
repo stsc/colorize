@@ -97,8 +97,8 @@ SKIP: {
         ok($ok, 'exit messages/values for failures');
     }
 
-    is(qx(echo    "hello world" | $program none/none), "hello world\n", 'line read from stdin with newline');
-    is(qx(echo -n "hello world" | $program none/none), "hello world",   'line read from stdin without newline');
+    is(qx(printf '%s\n' "hello world" | $program none/none), "hello world\n", 'line read from stdin with newline');
+    is(qx(printf  %s    "hello world" | $program none/none), "hello world",   'line read from stdin without newline');
 
     my $text = do { local $/; <DATA> };
 
@@ -117,7 +117,7 @@ SKIP: {
 
         my $ok = true;
         foreach my $value (@values) {
-            $ok &= qx(echo -n "\e[${value}m" | $program --clean) eq '';
+            $ok &= qx(printf %s "\e[${value}m" | $program --clean) eq '';
         }
         ok($ok, 'clean color sequences');
     }
@@ -128,16 +128,16 @@ SKIP: {
 
         my $switch = "--$type";
 
-        is(qx(echo -n "\e[35mhello\e[0m \e[36mworld\e[0m" | $program $switch),       'hello world', "$type colored words");
-        is(qx(echo -n "hello world" | $program Magenta | $program $switch),          'hello world', "$type colored line");
+        is(qx(printf %s "\e[35mhello\e[0m \e[36mworld\e[0m" | $program $switch),       'hello world', "$type colored words");
+        is(qx(printf %s "hello world" | $program Magenta | $program $switch),          'hello world', "$type colored line");
         is_deeply([split /\n/, qx($program cyan $infile1 | $program $switch)], [split /\n/, $text], "$type colored text");
 
-        ok(qx(echo -n "\e[\e[33m" | $program $switch) eq "\e[", "$type with invalid sequence");
+        ok(qx(printf %s "\e[\e[33m" | $program $switch) eq "\e[", "$type with invalid sequence");
     };
 
     $check_clean->($_) foreach qw(clean clean-all);
 
-    is(qx(echo -n "\e[4munderline\e[24m" | $program --clean-all), 'underline', 'clean-all color sequences');
+    is(qx(printf %s "\e[4munderline\e[24m" | $program --clean-all), 'underline', 'clean-all color sequences');
 
     my $check_clean_buf = sub
     {
@@ -147,7 +147,7 @@ SKIP: {
 
         # Check that line chunks are printed when cleaning text without sequences
         my $short_text = 'Linux dev 2.6.32-5-openvz-686 #1 SMP Sun Sep 23 11:40:07 UTC 2012 i686 GNU/Linux';
-        is(qx(echo -n "$short_text" | $program_buf $switch), $short_text, "print ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short}, $type)");
+        is(qx(printf %s "$short_text" | $program_buf $switch), $short_text, "print ${\length $short_text} bytes (BUF_SIZE=$BUF_SIZE{short}, $type)");
     };
 
     SKIP: {
@@ -163,15 +163,15 @@ SKIP: {
     is_deeply([split /\n/, qx(cat $infile2 | $program none/none)], [split /\n/, $repeated], "read ${\length $repeated} bytes (BUF_SIZE=$BUF_SIZE{normal})");
 
     {
-        my $colored_text = qx(echo "foo bar baz" | $program red);
+        my $colored_text = qx(printf '%s\n' "foo bar baz" | $program red);
         my $sequences = 0;
         $sequences++ while $colored_text =~ /\e\[\d+m/g;
         is($sequences, 2, 'count of sequences printed');
     }
 
-    is(qx(echo -n "hello\nworld\r\n" | $program none/none), "hello\nworld\r\n", 'stream mode');
+    is(qx(printf %s "hello\nworld\r\n" | $program none/none), "hello\nworld\r\n", 'stream mode');
 
-    is(system("echo \"hello world\" | $program random --exclude-random=black >/dev/null 2>&1"), 0, 'switch exclude-random');
+    is(system(qq(printf '%s\n' "hello world" | $program random --exclude-random=black >/dev/null 2>&1)), 0, 'switch exclude-random');
 
     SKIP: {
         skip 'valgrind not found', 1 unless system('which valgrind >/dev/null 2>&1') == 0;
@@ -189,10 +189,10 @@ Colors
 ======
 EOT
     foreach my $color (qw(none black red green yellow blue magenta cyan white default random)) {
-        system("echo $color | $program $color");
+        system(qq(printf '%s\n' "$color" | $program $color));
         next if $color eq 'none';
         my $bold_color = ucfirst $color;
-        system("echo $bold_color | $program $bold_color");
+        system(qq(printf '%s\n' "$bold_color" | $program $bold_color));
     }
 
     unlink $program;
