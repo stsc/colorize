@@ -110,7 +110,7 @@
 
 #define DEBUG_FILE "debug.txt"
 
-#define VERSION "0.56"
+#define VERSION "0.57"
 
 typedef enum { false, true } bool;
 
