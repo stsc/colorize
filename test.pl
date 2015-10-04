@@ -128,8 +128,8 @@ SKIP: {
 
         my $switch = "--$type";
 
-        is(qx(printf %s "\e[35mhello\e[0m \e[36mworld\e[0m" | $program $switch),       'hello world', "$type colored words");
-        is(qx(printf %s "hello world" | $program Magenta | $program $switch),          'hello world', "$type colored line");
+        is(qx(printf %s "\e[35mhello\e[0m \e[36mworld\e[0m" | $program $switch),     'hello world', "$type colored words");
+        is(qx(printf %s "hello world" | $program Magenta | $program $switch),        'hello world', "$type colored line");
         is_deeply([split /\n/, qx($program cyan $infile1 | $program $switch)], [split /\n/, $text], "$type colored text");
 
         ok(qx(printf %s "\e[\e[33m" | $program $switch) eq "\e[", "$type with invalid sequence");
