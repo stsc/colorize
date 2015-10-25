@@ -257,7 +257,7 @@ extern int optind;
 int
 main (int argc, char **argv)
 {
-    unsigned int arg_cnt = 0;
+    unsigned int arg_cnt;
 
     bool bold = false;
 
