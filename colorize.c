@@ -493,9 +493,7 @@ cleanup (void)
       {
         unsigned int i;
         for (i = 0; i < stacked_vars; i++)
-          if (vars_list[i])
-            free (vars_list[i]);
-
+          free (vars_list[i]);
         free_null (vars_list);
       }
 }
