@@ -211,6 +211,7 @@ static void cleanup (void);
 static void free_color_names (struct color_name **);
 static void process_args (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
 static void process_file_arg (const char *, const char **, FILE **);
+static void gather_color_names (const char *, bool *, struct color_name **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
 static void complete_part_line (const char *, char **, FILE *);
@@ -514,8 +515,7 @@ static void
 process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct color **colors, const char **file, FILE **stream)
 {
     int ret;
-    unsigned int index;
-    char *color, *p, *str;
+    char *p;
     struct stat sb;
 
     const char *color_string = arg_cnt >= 1 ? arg_strings[0] : NULL;
@@ -594,59 +594,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
           vfprintf_fail (formats[FMT_STRING], "one color pair allowed only for string", color_string);
       }
 
-    str = xstrdup (color_string);
-    STACK_VAR (str);
-
-    for (index = 0, color = str; *color; index++, color = p)
-      {
-        char *ch, *sep;
-
-        p = NULL;
-        if ((sep = strchr (color, COLOR_SEP_CHAR)))
-          {
-            *sep = '\0';
-            p = sep + 1;
-          }
-        else
-          p = color + strlen (color);
-        assert (p);
-
-        for (ch = color; *ch; ch++)
-          if (!isalpha (*ch))
-            vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be made of non-alphabetic characters");
-
-        for (ch = color + 1; *ch; ch++)
-          if (!islower (*ch))
-            vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be in mixed lower/upper case");
-
-        if (streq (color, "None"))
-          vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be bold");
-
-        if (isupper (*color))
-          {
-            switch (index)
-              {
-                case FOREGROUND:
-                  *bold = true;
-                  break;
-                case BACKGROUND:
-                  vfprintf_fail (formats[FMT_COLOR], tables[BACKGROUND].desc, color, "cannot be bold");
-                default: /* never reached */
-                  ABORT_TRACE ();
-              }
-          }
-
-        color_names[index] = xcalloc (1, sizeof (struct color_name));
-
-        color_names[index]->orig = xstrdup (color);
-
-        for (ch = color; *ch; ch++)
-          *ch = tolower (*ch);
-
-        color_names[index]->name = xstrdup (color);
-      }
-
-    RELEASE_VAR (str);
+    gather_color_names (color_string, bold, color_names);
 
     assert (color_names[FOREGROUND]);
 
@@ -711,6 +659,67 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
 
     assert (*stream);
     assert (*file);
+}
+
+static void
+gather_color_names (const char *color_string, bool *bold, struct color_name **color_names)
+{
+    unsigned int index;
+    char *color, *p, *str;
+
+    str = xstrdup (color_string);
+    STACK_VAR (str);
+
+    for (index = 0, color = str; *color; index++, color = p)
+      {
+        char *ch, *sep;
+
+        p = NULL;
+        if ((sep = strchr (color, COLOR_SEP_CHAR)))
+          {
+            *sep = '\0';
+            p = sep + 1;
+          }
+        else
+          p = color + strlen (color);
+        assert (p);
+
+        for (ch = color; *ch; ch++)
+          if (!isalpha (*ch))
+            vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be made of non-alphabetic characters");
+
+        for (ch = color + 1; *ch; ch++)
+          if (!islower (*ch))
+            vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be in mixed lower/upper case");
+
+        if (streq (color, "None"))
+          vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be bold");
+
+        if (isupper (*color))
+          {
+            switch (index)
+              {
+                case FOREGROUND:
+                  *bold = true;
+                  break;
+                case BACKGROUND:
+                  vfprintf_fail (formats[FMT_COLOR], tables[BACKGROUND].desc, color, "cannot be bold");
+                default: /* never reached */
+                  ABORT_TRACE ();
+              }
+          }
+
+        color_names[index] = xcalloc (1, sizeof (struct color_name));
+
+        color_names[index]->orig = xstrdup (color);
+
+        for (ch = color; *ch; ch++)
+          *ch = tolower (*ch);
+
+        color_names[index]->name = xstrdup (color);
+      }
+
+    RELEASE_VAR (str);
 }
 
 static void
