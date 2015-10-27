@@ -211,6 +211,7 @@ static void cleanup (void);
 static void free_color_names (struct color_name **);
 static void process_args (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
 static void process_file_arg (const char *, const char **, FILE **);
+static void skip_path_colors (const char *, const char *, const struct stat *);
 static void gather_color_names (const char *, bool *, struct color_name **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
 static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
@@ -536,53 +537,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
     /* Ensure that we don't fail if there's a file with one or more
        color names in its path.  */
     if (ret == 0) /* success */
-      {
-        bool have_file;
-        unsigned int c;
-        const char *color = color_string;
-        const mode_t mode = sb.st_mode;
-
-        for (c = 1; c <= 2 && *color; c++)
-          {
-            bool matched = false;
-            unsigned int i;
-            for (i = 0; i < tables[FOREGROUND].count; i++)
-              {
-                const struct color *entry = &tables[FOREGROUND].entries[i];
-                if (has_color_name (color, entry->name))
-                  {
-                    color += strlen (entry->name);
-                    matched = true;
-                    break;
-                  }
-              }
-            if (!matched && has_color_name (color, "random"))
-              {
-                color += strlen ("random");
-                matched = true;
-              }
-            if (matched && *color == COLOR_SEP_CHAR && *(color + 1))
-              color++;
-            else
-              break;
-          }
-
-        have_file = (*color != '\0');
-
-        if (have_file)
-          {
-            const char *file_exists = color_string;
-            if (file_string)
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "cannot be used as color string");
-            else
-              {
-                if (VALID_FILE_TYPE (mode))
-                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceeded by color string");
-                else
-                  vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "is not a valid file type");
-              }
-          }
-      }
+      skip_path_colors (color_string, file_string, &sb);
 
     if ((p = strchr (color_string, COLOR_SEP_CHAR)))
       {
@@ -659,6 +614,56 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
 
     assert (*stream);
     assert (*file);
+}
+
+static void
+skip_path_colors (const char *color_string, const char *file_string, const struct stat *sb)
+{
+    bool have_file;
+    unsigned int c;
+    const char *color = color_string;
+    const mode_t mode = sb->st_mode;
+
+    for (c = 1; c <= 2 && *color; c++)
+      {
+        bool matched = false;
+        unsigned int i;
+        for (i = 0; i < tables[FOREGROUND].count; i++)
+          {
+            const struct color *entry = &tables[FOREGROUND].entries[i];
+            if (has_color_name (color, entry->name))
+              {
+                color += strlen (entry->name);
+                matched = true;
+                break;
+              }
+          }
+        if (!matched && has_color_name (color, "random"))
+          {
+            color += strlen ("random");
+            matched = true;
+          }
+        if (matched && *color == COLOR_SEP_CHAR && *(color + 1))
+          color++;
+        else
+          break;
+      }
+
+    have_file = (*color != '\0');
+
+    if (have_file)
+      {
+        const char *file_exists = color_string;
+        if (file_string)
+          vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "cannot be used as color string");
+        else
+          {
+            if (VALID_FILE_TYPE (mode))
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceeded by color string");
+            else
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "is not a valid file type");
+          }
+      }
 }
 
 static void
