@@ -795,8 +795,8 @@ merge_print_line (bool bold, const struct color **colors, const char *line, cons
 
 #ifdef TEST_MERGE_PART_LINE
     printf ("%s", part_line);
-    free (merged_part_line);
-    exit (EXIT_SUCCESS);
+    fflush (stdout);
+    _exit (EXIT_SUCCESS);
 #else
     print_line (bold, colors, part_line, 0);
     free (merged_part_line);
