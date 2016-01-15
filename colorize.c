@@ -214,7 +214,7 @@ static void process_file_arg (const char *, const char **, FILE **);
 static void skip_path_colors (const char *, const char *, const struct stat *);
 static void gather_color_names (const char *, bool *, struct color_name **);
 static void read_print_stream (bool, const struct color **, const char *, FILE *);
-static void merge_print_line (bool, const struct color **, const char *, const char *, FILE *);
+static void merge_print_line (const char *, const char *, FILE *);
 static void complete_part_line (const char *, char **, FILE *);
 static bool get_next_char (char *, const char **, FILE *, bool *);
 static void save_char (char, char **, size_t *, size_t *);
@@ -771,7 +771,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
           {
             char *p;
             if ((clean || clean_all) && (p = strrchr (line, '\033')))
-              merge_print_line (bold, colors, line, p, stream);
+              merge_print_line (line, p, stream);
             else
               print_line (bold, colors, line, 0);
           }
@@ -779,27 +779,33 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
 }
 
 static void
-merge_print_line (bool bold, const struct color **colors, const char *line, const char *p, FILE *stream)
+merge_print_line (const char *line, const char *p, FILE *stream)
 {
     char *buf = NULL;
-    char *merged_part_line = NULL;
-    const char *part_line;
+    char *merged_esc = NULL;
+    const char *esc = "";
+    const char char_restore = *p;
 
     complete_part_line (p + 1, &buf, stream);
 
     if (buf)
-      part_line = merged_part_line = str_concat (line, buf);
-    else
-      part_line = line;
-    free (buf);
+      {
+        /* form escape sequence */
+        esc = merged_esc = str_concat (p, buf);
+        /* shorten partial line accordingly */
+        *(char *)p = '\0';
+        free (buf);
+      }
 
 #ifdef TEST_MERGE_PART_LINE
-    printf ("%s", part_line);
+    printf ("%s%s", line, esc);
     fflush (stdout);
     _exit (EXIT_SUCCESS);
 #else
-    print_line (bold, colors, part_line, 0);
-    free (merged_part_line);
+    print_clean (line);
+    *(char *)p = char_restore;
+    print_clean (esc);
+    free (merged_esc);
 #endif
 }
 
