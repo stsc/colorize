@@ -106,7 +106,13 @@
 
 #define ALLOC_COMPLETE_PART_LINE 8
 
-#define COLOR_SEP_CHAR '/'
+#if defined(COLOR_SEP_CHAR_COLON)
+# define COLOR_SEP_CHAR ':'
+#elif defined(COLOR_SEP_CHAR_SLASH)
+# define COLOR_SEP_CHAR '/'
+#else
+# define COLOR_SEP_CHAR '/'
+#endif
 
 #define DEBUG_FILE "debug.txt"
 
