@@ -482,6 +482,7 @@ print_version (void)
       }
     else
       printf ("Buffer size: %lu byte%s\n", (unsigned long)BUF_SIZE, BUF_SIZE > 1 ? "s" : "");
+    printf ("Color separator: '%c'\n", COLOR_SEP_CHAR);
     printf ("Debugging: %s\n", debug ? "yes" : "no");
 }
 
