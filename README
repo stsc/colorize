@@ -43,6 +43,18 @@ Documentation
 -------------
 See man page source file: colorize.1.
 
+Usage example
+-------------
+In ~/.bashrc:
+
+| ls_color() {
+|     ls "$@" | colorize green -
+| }
+| alias ls=ls_color
+
+This excerpt defines an alias which will set the color being
+printed for literal ls invocations to green.
+
 Afterword
 ---------
 Let me know, if you have ideas, bug reports, patches, etc.
