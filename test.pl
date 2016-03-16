@@ -18,6 +18,7 @@ my %BUF_SIZE = (
    short  => 10,
 );
 my $source = 'colorize.c';
+my $compiler = 'gcc';
 my $compiler_flags = '-ansi -pedantic -Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter';
 
 my $write_to_tmpfile = sub
@@ -42,11 +43,11 @@ SKIP: {
     skip "$source does not exist", $tests unless -e $source;
 
     my $binary = tmpnam();
-    skip 'compiling failed', $tests unless system("gcc $compiler_flags -o $binary $source") == 0;
+    skip 'compiling failed', $tests unless system("$compiler $compiler_flags -o $binary $source") == 0;
     unlink $binary;
 
     my $program = tmpnam();
-    skip 'compiling failed (normal)', $tests unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{normal} -o $program $source") == 0;
+    skip 'compiling failed (normal)', $tests unless system("$compiler -DTEST -DBUF_SIZE=$BUF_SIZE{normal} -o $program $source") == 0;
 
     is(system("$program --help >/dev/null 2>&1"),    0, 'exit value for help screen');
     is(system("$program --version >/dev/null 2>&1"), 0, 'exit value for version data');
@@ -152,7 +153,7 @@ SKIP: {
 
     SKIP: {
         my $program_buf = tmpnam();
-        skip 'compiling failed (short buffer)', 2 unless system("gcc -DTEST -DBUF_SIZE=$BUF_SIZE{short} -o $program_buf $source") == 0;
+        skip 'compiling failed (short buffer)', 2 unless system("$compiler -DTEST -DBUF_SIZE=$BUF_SIZE{short} -o $program_buf $source") == 0;
         $check_clean_buf->($program_buf, $_) foreach qw(clean clean-all);
         unlink $program_buf;
     }
@@ -180,7 +181,7 @@ SKIP: {
 
     {
         my $debug = tmpnam();
-        is(system("gcc -DDEBUG -o $debug $source"), 0, 'debugging build');
+        is(system("$compiler -DDEBUG -o $debug $source"), 0, 'debugging build');
         unlink $debug if -e $debug;
     }
 
