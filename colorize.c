@@ -745,10 +745,10 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         size_t bytes_read;
         char *eol;
         const char *line;
-        memset (buf, '\0', BUF_SIZE + 1);
         bytes_read = fread (buf, 1, BUF_SIZE, stream);
         if (bytes_read != BUF_SIZE && ferror (stream))
           vfprintf_fail (formats[FMT_ERROR], BUF_SIZE, "read");
+        buf[bytes_read] = '\0';
         line = buf;
         while ((eol = strpbrk (line, "\n\r")))
           {
