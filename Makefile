@@ -17,3 +17,6 @@ check:
 
 clean:
 			rm -f a.out colorize debug.txt version.h
+
+release:
+			sh ./release.sh
