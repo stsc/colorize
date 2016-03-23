@@ -1,4 +1,4 @@
-.PHONY: check clean
+.PHONY: check clean release
 
 .SUFFIXES:
 .SUFFIXES: .c .o
