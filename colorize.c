@@ -183,7 +183,7 @@ static const char *formats[] = {
     "%s: %s: %s",             /* type    */
 };
 
-enum { FOREGROUND, BACKGROUND };
+enum { GENERIC, FOREGROUND = 0, BACKGROUND };
 
 static const struct {
     struct color const *entries;
@@ -372,9 +372,9 @@ process_opts (int argc, char **argv)
                     unsigned int i;
                     exclude = xstrdup (optarg);
                     STACK_VAR (exclude);
-                    for (i = 1; i < tables[FOREGROUND].count - 1; i++) /* skip color none and default */
+                    for (i = 1; i < tables[GENERIC].count - 1; i++) /* skip color none and default */
                       {
-                        const struct color *entry = &tables[FOREGROUND].entries[i];
+                        const struct color *entry = &tables[GENERIC].entries[i];
                         if (streq (exclude, entry->name))
                           {
                             valid = true;
@@ -635,9 +635,9 @@ skip_path_colors (const char *color_string, const char *file_string, const struc
       {
         bool matched = false;
         unsigned int i;
-        for (i = 0; i < tables[FOREGROUND].count; i++)
+        for (i = 0; i < tables[GENERIC].count; i++)
           {
-            const struct color *entry = &tables[FOREGROUND].entries[i];
+            const struct color *entry = &tables[GENERIC].entries[i];
             if (has_color_name (color, entry->name))
               {
                 color += strlen (entry->name);
