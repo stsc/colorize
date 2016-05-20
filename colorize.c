@@ -1075,7 +1075,7 @@ gather_esc_offsets (const char *p, const char **start, const char **end)
     if (*p == 27 && *(p + 1) == '[')
       {
         bool valid = false;
-        const char *begin = p;
+        const char *const begin = p;
         p += 2;
         if (clean_all)
           valid = validate_esc_clean_all (&p);
