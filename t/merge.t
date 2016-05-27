@@ -117,9 +117,9 @@ my $test_name = sub
     return "$sequence: $substr";
 };
 
-plan tests => $tests;
-
 my $compiling_failed_msg = 'compiling failed (merge part line)';
+
+plan tests => $tests;
 
 foreach my $test (@merge_success) {
     foreach my $buf_size (@{$test->[1]}) {
