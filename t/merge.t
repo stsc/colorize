@@ -119,10 +119,12 @@ my $test_name = sub
 
 plan tests => $tests;
 
+my $compiling_failed_msg = 'compiling failed (merge part line)';
+
 foreach my $test (@merge_success) {
     foreach my $buf_size (@{$test->[1]}) {
         SKIP: {
-            skip 'compiling failed (merge part line)', 1 unless $compile->($buf_size);
+            skip $compiling_failed_msg, 1 unless $compile->($buf_size);
             ok(qx(printf %s "$test->[0]" | $programs{$buf_size} --clean) eq $test->[0], 'merge success: ' . $test_name->($test->[0], $buf_size));
         }
     }
@@ -130,14 +132,14 @@ foreach my $test (@merge_success) {
 foreach my $test (@merge_fail) {
     my $buf_size = $test->[1];
     SKIP: {
-        skip 'compiling failed (merge part line)', 1 unless $compile->($buf_size);
+        skip $compiling_failed_msg, 1 unless $compile->($buf_size);
         ok(qx(printf %s "$test->[0]" | $programs{$buf_size} --clean) eq substr($test->[0], 0, $buf_size), 'merge fail: ' . $test_name->($test->[0], $buf_size));
     }
 }
 foreach my $test (@buffer) {
     my $buf_size = length($test) - 1;
     SKIP: {
-        skip 'compiling failed (merge part line)', 1 unless $compile->($buf_size);
+        skip $compiling_failed_msg, 1 unless $compile->($buf_size);
         ok(qx(printf %s "$test" | $programs{$buf_size} --clean) eq substr($test, 0, $buf_size), 'buffer: ' . $test_name->($test, $buf_size));
     }
 }
@@ -145,7 +147,7 @@ foreach my $test (@pushback) {
     my $buf_size = $test->[1];
     SKIP: {
         my $program = tmpnam();
-        skip 'compiling failed (merge part line)', 1 unless system("$compiler -DBUF_SIZE=$buf_size -o $program $source") == 0;
+        skip $compiling_failed_msg, 1 unless system("$compiler -DBUF_SIZE=$buf_size -o $program $source") == 0;
         ok(qx(printf %s "$test->[0]" | $program --clean) eq $test->[0], 'pushback: ' . $test_name->($test->[0], $buf_size));
         unlink $program;
     }
