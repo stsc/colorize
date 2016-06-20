@@ -5,13 +5,11 @@ use warnings;
 use constant true  => 1;
 use constant false => 0;
 
-use File::Temp qw(tempfile tempdir tmpnam);
-use IPC::Open3 qw(open3);
-use Symbol qw(gensym);
+use File::Temp qw(tempfile tmpnam);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 25;
+my $tests = 24;
 
 my %BUF_SIZE = (
    normal => 1024,
@@ -51,52 +49,6 @@ SKIP: {
 
     is(system("$program --help >/dev/null 2>&1"),    0, 'exit value for help screen');
     is(system("$program --version >/dev/null 2>&1"), 0, 'exit value for version data');
-
-    my $run_program_fail = sub
-    {
-        my ($program, $args, $message) = @_;
-
-        my @args = split /\s+/, $args;
-
-        my $err = gensym;
-
-        my $pid = open3(gensym, gensym, $err, $program, @args);
-        waitpid($pid, 0);
-
-        my $output = do { local $/; <$err> };
-
-        return ($? >> 8 == 1 && $output =~ /$message/) ? true : false;
-    };
-
-    {
-        my $ok = true;
-
-        my $file = $write_to_tmpfile->('abc');
-        my $dir  = tempdir(CLEANUP => true);
-
-        $ok &= $run_program_fail->($program, '--exclude-random=random', 'must be provided a plain color');
-        $ok &= $run_program_fail->($program, '--clean --clean-all',     'mutually exclusive');
-        $ok &= $run_program_fail->($program, '--clean file1 file2',     'more than one file');
-        $ok &= $run_program_fail->($program, '--clean-all file1 file2', 'more than one file');
-        $ok &= $run_program_fail->($program, '- file',                  'hyphen cannot be used as color string');
-        $ok &= $run_program_fail->($program, '-',                       'hyphen must be preceeded by color string');
-        $ok &= $run_program_fail->($program, "$file file",              'cannot be used as color string');
-        $ok &= $run_program_fail->($program, "$file",                   'must be preceeded by color string');
-        $ok &= $run_program_fail->($program, "$dir",                    'is not a valid file type');
-        $ok &= $run_program_fail->($program, '/black',                  'foreground color missing');
-        $ok &= $run_program_fail->($program, 'white/',                  'background color missing');
-        $ok &= $run_program_fail->($program, 'white/black/yellow',      'one color pair allowed only');
-        $ok &= $run_program_fail->($program, 'y3llow',                  'cannot be made of non-alphabetic characters');
-        $ok &= $run_program_fail->($program, 'yEllow',                  'cannot be in mixed lower/upper case');
-        $ok &= $run_program_fail->($program, 'None',                    'cannot be bold');
-        $ok &= $run_program_fail->($program, 'white/Black',             'cannot be bold');
-
-        foreach my $color_pair (qw(random/none random/default none/random default/random)) {
-            $ok &= $run_program_fail->($program, $color_pair, 'cannot be combined with');
-        }
-
-        ok($ok, 'exit messages/values for failures');
-    }
 
     is(qx(printf '%s\n' "hello world" | $program none/none), "hello world\n", 'line read from stdin with newline');
     is(qx(printf  %s    "hello world" | $program none/none), "hello world",   'line read from stdin without newline');
