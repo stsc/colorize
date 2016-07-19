@@ -2,33 +2,16 @@
 
 use strict;
 use warnings;
+use lib qw(lib);
 use constant true  => 1;
 use constant false => 0;
 
-use File::Temp qw(tempfile tmpnam);
+use Colorize::Common qw(:defaults $compiler_flags %BUF_SIZE $write_to_tmpfile);
+use File::Temp qw(tmpnam);
 use Test::Harness qw(runtests);
 use Test::More;
 
 my $tests = 24;
-
-my %BUF_SIZE = (
-   normal => 1024,
-   short  => 10,
-);
-my $source = 'colorize.c';
-my $compiler = 'gcc';
-my $compiler_flags = '-ansi -pedantic -Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter';
-
-my $write_to_tmpfile = sub
-{
-    my ($content) = @_;
-
-    my ($fh, $tmpfile) = tempfile(UNLINK => true);
-    print {$fh} $content;
-    close($fh);
-
-    return $tmpfile;
-};
 
 {
     my @test_files = glob('t/*.t');

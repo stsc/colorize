@@ -2,29 +2,17 @@
 
 use strict;
 use warnings;
+use lib qw(lib);
 use constant true  => 1;
 use constant false => 0;
 
-use File::Temp qw(tempfile tempdir tmpnam);
+use Colorize::Common qw(:defaults $write_to_tmpfile);
+use File::Temp qw(tempdir tmpnam);
 use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
 my $tests = 20;
-
-my $source = 'colorize.c';
-my $compiler = 'gcc';
-
-my $write_to_tmpfile = sub
-{
-    my ($content) = @_;
-
-    my ($fh, $tmpfile) = tempfile(UNLINK => true);
-    print {$fh} $content;
-    close($fh);
-
-    return $tmpfile;
-};
 
 my $run_program_fail = sub
 {

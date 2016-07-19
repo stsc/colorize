@@ -2,9 +2,11 @@
 
 use strict;
 use warnings;
+use lib qw(lib);
 use constant true  => 1;
 use constant false => 0;
 
+use Colorize::Common ':defaults';
 use File::Temp qw(tmpnam);
 use Test::More;
 
@@ -94,8 +96,6 @@ $tests += @merge_fail;
 $tests += @buffer;
 $tests += @pushback;
 
-my $source = 'colorize.c';
-my $compiler = 'gcc';
 my %programs;
 
 my $compile = sub
