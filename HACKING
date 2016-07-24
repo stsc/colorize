@@ -1,0 +1,9 @@
+colorize Hacking
+================
+
+Git dependency for version output
+---------------------------------
+The colorize sources ought to be made available as a Git repository,
+otherwise no detailed git version hash may be included in the version
+output of colorize.  Even versions of older commits will no longer be
+accessible.  See version.pl for some in depth code.
