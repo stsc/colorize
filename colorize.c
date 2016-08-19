@@ -194,6 +194,23 @@ static const struct {
     { bg_colors, sizeof (bg_colors) / sizeof (struct color), "background" },
 };
 
+enum {
+    OPT_CLEAN = 1,
+    OPT_CLEAN_ALL,
+    OPT_EXCLUDE_RANDOM,
+    OPT_HELP,
+    OPT_VERSION
+};
+static int opt_type;
+static const struct option long_opts[] = {
+    { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
+    { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
+    { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
+    { "help",           no_argument,       &opt_type, OPT_HELP           },
+    { "version",        no_argument,       &opt_type, OPT_VERSION        },
+    {  NULL,            0,                 NULL,      0                  },
+};
+
 static FILE *stream;
 #if DEBUG
 static FILE *log;
@@ -330,29 +347,11 @@ main (int argc, char **argv)
     goto PARSE_OPT;        \
 
 extern char *optarg;
-static int opt_type;
 
 static void
 process_opts (int argc, char **argv)
 {
-    enum {
-        OPT_CLEAN = 1,
-        OPT_CLEAN_ALL,
-        OPT_EXCLUDE_RANDOM,
-        OPT_HELP,
-        OPT_VERSION
-    };
-
     int opt;
-    struct option long_opts[] = {
-        { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
-        { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
-        { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
-        { "help",           no_argument,       &opt_type, OPT_HELP           },
-        { "version",        no_argument,       &opt_type, OPT_VERSION        },
-        {  NULL,            0,                 NULL,      0                  },
-    };
-
     while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
       {
         PARSE_OPT:
@@ -417,6 +416,15 @@ print_hint (void)
 static void
 print_help (void)
 {
+    struct short_opt {
+        const char *name;
+        const char *short_opt;
+    };
+    const struct short_opt short_opts[] = {
+        { "help",    "h" },
+        { "version", "V" },
+    };
+    const struct option *opt = long_opts;
     unsigned int i;
 
     printf ("Usage: %s (foreground) OR (foreground)%c(background) OR --clean[-all] [-|file]\n\n", program_name, COLOR_SEP_CHAR);
@@ -438,11 +446,24 @@ print_help (void)
     printf ("\twhereas for lower case colors will be of normal intensity.\n");
 
     printf ("\n\tOptions\n");
-    printf ("\t\t    --clean\n");
-    printf ("\t\t    --clean-all\n");
-    printf ("\t\t    --exclude-random\n");
-    printf ("\t\t-h, --help\n");
-    printf ("\t\t-V, --version\n\n");
+    for (; opt->name; opt++)
+      {
+        const char *short_opt = NULL;
+        unsigned int i;
+        for (i = 0; i < sizeof (short_opts) / sizeof (struct short_opt); i++)
+          {
+            if (streq (opt->name, short_opts[i].name))
+              {
+                short_opt = short_opts[i].short_opt;
+                break;
+              }
+          }
+        if (short_opt)
+          printf ("\t\t-%s, --%s\n", short_opt, opt->name);
+        else
+          printf ("\t\t    --%s\n", opt->name);
+      }
+    printf ("\n");
 }
 
 static void
