@@ -11,10 +11,10 @@ our (@EXPORT_OK, %EXPORT_TAGS);
 my @defaults;
 
 @defaults    = qw($source $compiler);
-@EXPORT_OK   = (qw($compiler_flags %BUF_SIZE $write_to_tmpfile), @defaults);
+@EXPORT_OK   = (qw($compiler_flags %BUF_SIZE $valgrind_command $write_to_tmpfile), @defaults);
 %EXPORT_TAGS = ('defaults' => [ @defaults ]);
 
-our ($source, $compiler, $compiler_flags, %BUF_SIZE, $write_to_tmpfile);
+our ($source, $compiler, $compiler_flags, %BUF_SIZE, $valgrind_command, $write_to_tmpfile);
 
 #---------------#
 # START of data #
@@ -27,6 +27,7 @@ $compiler_flags = '-ansi -pedantic -Wall -Wextra -Wformat -Wswitch-default -Wuni
     normal => 1024,
     short  => 10,
 );
+$valgrind_command = 'valgrind';
 $write_to_tmpfile = sub
 {
     my ($content) = @_;

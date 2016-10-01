@@ -1,4 +1,4 @@
-.PHONY: check clean release
+.PHONY: check check_valgrind clean release
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -13,7 +13,11 @@ colorize:	colorize.c
 			$(CC) $(CFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)" -DHAVE_VERSION $(FLAGS)
 
 check:
-			perl ./test.pl
+			perl ./test.pl --regular
+
+check_valgrind:
+			@which valgrind >/dev/null 2>&1 || (printf '%s\n' "valgrind not found" && exit 1)
+			perl ./test.pl --valgrind || exit 0
 
 clean:
 			rm -f a.out colorize debug.txt version.h
