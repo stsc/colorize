@@ -20,6 +20,7 @@ Requirements
 gcc
 make
 perl
+valgrind (optional)
 
 Build instructions
 ------------------
@@ -38,6 +39,12 @@ For the sake of completeness, colorize can be also built with
 debugging output by issuing `make FLAGS=-DDEBUG'.  The intention
 is to provide some memory allocation diagnostics (and might be
 extended in future).  Usually, a debugging build is not required.
+
+Furthermore, tests can be run through valgrind by issuing, for
+example, `make check_valgrind 2>&1 | tee valgrind.out'.  The
+file provided here for the `tee' invocation will be populated
+with the captured output from both standard output and error
+stream.
 
 Documentation
 -------------
