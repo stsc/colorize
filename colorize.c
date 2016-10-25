@@ -125,8 +125,6 @@ struct color_name {
     char *orig;
 };
 
-static struct color_name *color_names[3] = { NULL, NULL, NULL };
-
 struct color {
     const char *name;
     const char *code;
@@ -510,8 +508,6 @@ print_version (void)
 static void
 cleanup (void)
 {
-    free_color_names (color_names);
-
     if (stream && fileno (stream) != STDIN_FILENO)
       fclose (stream);
 #if DEBUG
@@ -534,9 +530,9 @@ free_color_names (struct color_name **color_names)
     unsigned int i;
     for (i = 0; color_names[i]; i++)
       {
-        free (color_names[i]->name);
-        free (color_names[i]->orig);
-        free_null (color_names[i]);
+        RELEASE_VAR (color_names[i]->name);
+        RELEASE_VAR (color_names[i]->orig);
+        RELEASE_VAR (color_names[i]);
       }
 }
 
@@ -546,6 +542,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
     int ret;
     char *p;
     struct stat sb;
+    struct color_name *color_names[3] = { NULL, NULL, NULL };
 
     const char *color_string = arg_cnt >= 1 ? arg_strings[0] : NULL;
     const char *file_string  = arg_cnt == 2 ? arg_strings[1] : NULL;
@@ -743,13 +740,16 @@ gather_color_names (const char *color_string, bool *bold, struct color_name **co
           }
 
         color_names[index] = xcalloc (1, sizeof (struct color_name));
+        STACK_VAR (color_names[index]);
 
         color_names[index]->orig = xstrdup (color);
+        STACK_VAR (color_names[index]->orig);
 
         for (ch = color; *ch; ch++)
           *ch = tolower (*ch);
 
         color_names[index]->name = xstrdup (color);
+        STACK_VAR (color_names[index]->name);
       }
 
     RELEASE_VAR (str);
