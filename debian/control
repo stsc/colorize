@@ -1,0 +1,14 @@
+Source: colorize
+Section: utils
+Priority: optional
+Maintainer: Steven Schubiger <stsc@refcnt.org>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Vcs-Git: git://refcnt.org/colorize.git
+Vcs-Browser: http://cgit.refcnt.org/colorize.git/
+
+Package: colorize
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Colorize text on terminal with ANSI escape sequences
+ Colorizes text read from standard input stream or file by using ANSI escape sequences (and also vice versa, i.e. cleaning text from sequences) and prints resulting output to the terminal.

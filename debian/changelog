@@ -1,0 +1,5 @@
+colorize (0.59-1) unstable; urgency=low
+
+  * Initial Debian package version.
+
+ -- Steven Schubiger <stsc@refcnt.org>  Fri, 23 Dec 2016 17:18:36 +0100
