@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: colorize
-Source: http://cgit.refcnt.org/colorize.git/snapshot/colorize-0.59.tar.gz
+Source: http://cgit.refcnt.org/colorize.git/
 
 Files: *
 Copyright: 2011-2016 Steven Schubiger <stsc@refcnt.org>
