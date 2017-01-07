@@ -554,7 +554,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
         if (file_string)
           vfprintf_fail (formats[FMT_GENERIC], "hyphen cannot be used as color string");
         else
-          vfprintf_fail (formats[FMT_GENERIC], "hyphen must be preceeded by color string");
+          vfprintf_fail (formats[FMT_GENERIC], "hyphen must be preceded by color string");
       }
 
     ret = lstat (color_string, &sb);
@@ -684,7 +684,7 @@ skip_path_colors (const char *color_string, const char *file_string, const struc
         else
           {
             if (VALID_FILE_TYPE (mode))
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceeded by color string");
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceded by color string");
             else
               vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "is not a valid file type");
           }
