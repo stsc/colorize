@@ -339,10 +339,13 @@ main (int argc, char **argv)
     exit (EXIT_SUCCESS);
 }
 
-#define SET_OPT_TYPE(type) \
-    opt_type = type;       \
-    opt = 0;               \
-    goto PARSE_OPT;        \
+#define PRINT_HELP_EXIT() \
+    print_help ();        \
+    exit (EXIT_SUCCESS);  \
+
+#define PRINT_VERSION_EXIT() \
+    print_version ();        \
+    exit (EXIT_SUCCESS);     \
 
 extern char *optarg;
 
@@ -352,7 +355,6 @@ process_opts (int argc, char **argv)
     int opt;
     while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
       {
-        PARSE_OPT:
         switch (opt)
           {
             case 0: /* long opts */
@@ -383,19 +385,17 @@ process_opts (int argc, char **argv)
                     break;
                   }
                   case OPT_HELP:
-                    print_help ();
-                    exit (EXIT_SUCCESS);
+                    PRINT_HELP_EXIT ();
                   case OPT_VERSION:
-                    print_version ();
-                    exit (EXIT_SUCCESS);
+                    PRINT_VERSION_EXIT ();
                   default: /* never reached */
                     ABORT_TRACE ();
                 }
               break;
             case 'h':
-              SET_OPT_TYPE (OPT_HELP);
+              PRINT_HELP_EXIT ();
             case 'V':
-              SET_OPT_TYPE (OPT_VERSION);
+              PRINT_VERSION_EXIT ();
             case '?':
               print_hint ();
               exit (EXIT_FAILURE);
