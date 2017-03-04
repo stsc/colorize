@@ -473,13 +473,23 @@ print_version (void)
     const char *version = NULL;
 #endif
     const char *version_prefix, *version_string;
-    const char *c_flags;
+    const char *c_flags, *ld_flags, *cpp_flags;
     struct bytes_size bytes_size;
     bool debug;
 #ifdef CFLAGS
     c_flags = to_str (CFLAGS);
 #else
     c_flags = "unknown";
+#endif
+#ifdef LDFLAGS
+    ld_flags = to_str (LDFLAGS);
+#else
+    ld_flags = "unknown";
+#endif
+#ifdef CPPFLAGS
+    cpp_flags = to_str (CPPFLAGS);
+#else
+    cpp_flags = "unknown";
 #endif
 #if DEBUG
     debug = true;
@@ -491,6 +501,8 @@ print_version (void)
     printf ("colorize %s%s (compiled at %s, %s)\n", version_prefix, version_string, __DATE__, __TIME__);
 
     printf ("Compiler flags: %s\n", c_flags);
+    printf ("Linker flags: %s\n", ld_flags);
+    printf ("Preprocessor flags: %s\n", cpp_flags);
     if (get_bytes_size (BUF_SIZE, &bytes_size))
       {
         if (BUF_SIZE % 1024 == 0)

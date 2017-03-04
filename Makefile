@@ -10,7 +10,9 @@ FLAGS= # command-line macro
 
 colorize:	colorize.c
 			perl ./version.pl > version.h
-			$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o colorize colorize.c -DCFLAGS="$(CFLAGS)" -DHAVE_VERSION $(FLAGS)
+			$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o colorize colorize.c \
+  -DCPPFLAGS="\"$(CPPFLAGS)\"" -DCFLAGS="\"$(CFLAGS)\"" -DLDFLAGS="\"$(LDFLAGS)\"" \
+  -DHAVE_VERSION $(FLAGS)
 
 check:
 			perl ./test.pl --regular
