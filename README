@@ -28,10 +28,12 @@ Issue `make' to build colorize.
 
 Once completed, run the tests with `make check'.
 
-Then you should most likely have a working binary.  There are
-currently no make targets to install it as such.
+Then you should most likely have a working binary.
 
-Finally, remove it through `make clean'.
+Next, install it with `make install' (may require elevated
+user permissions).
+
+Finally, clean up the working directory through `make clean'.
 
 Debugging instructions
 ----------------------
