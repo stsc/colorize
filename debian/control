@@ -9,6 +9,7 @@ Vcs-Git: git://refcnt.org/colorize.git
 Vcs-Browser: http://cgit.refcnt.org/colorize.git/
 
 Package: colorize
+Conflicts: forensics-colorize
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Colorizes text on terminal with ANSI escape sequences
