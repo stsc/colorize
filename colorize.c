@@ -785,7 +785,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
         line = buf;
         while ((eol = strpbrk (line, "\n\r")))
           {
-            char *p;
+            const char *p;
             flags &= ~(CR|LF);
             if (*eol == '\r')
               {
