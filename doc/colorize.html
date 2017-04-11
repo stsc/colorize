@@ -1,20 +1,102 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-       "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
-    <title>colorize Screenshots</title>
-  </head>
-  <body bgcolor="#000000">
-    <table align="center" cellpadding="2">
-      <tr><td><img src="colorize/colorize1.jpg" alt="1"></td></tr>
-      <tr><td><img src="colorize/colorize2.jpg" alt="2"></td></tr>
-      <tr><td><img src="colorize/colorize3.jpg" alt="3"></td></tr>
-      <tr><td><img src="colorize/colorize4.jpg" alt="4"></td></tr>
-      <tr><td><img src="colorize/colorize5.jpg" alt="5"></td></tr>
-      <tr><td><img src="colorize/colorize6.jpg" alt="6"></td></tr>
-      <tr><td><img src="colorize/colorize7.jpg" alt="7"></td></tr>
-      <tr><td><img src="colorize/colorize8.jpg" alt="8"></td></tr>
-    </table>
-  </body>
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- This file was created with the aha Ansi HTML Adapter. http://ziz.delphigl.com/tool_aha.php -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="application/xml+xhtml; charset=UTF-8" />
+<title>colorize</title>
+</head>
+<body style="color:white; background-color:black">
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --help
+Usage: ./colorize (foreground) OR (foreground)/(background) OR --clean[-all] [-|file]
+
+	Colors (foreground) (background)
+		{-} none         none
+		{<span style="color:black;">#</span>} [Bb]lack     black
+		{<span style="color:red;">#</span>} [Rr]ed       red
+		{<span style="color:lime;">#</span>} [Gg]reen     green
+		{<span style="color:yellow;">#</span>} [Yy]ellow    yellow
+		{<span style="color:#3333FF;">#</span>} [Bb]lue      blue
+		{<span style="color:fuchsia;">#</span>} [Mm]agenta   magenta
+		{<span style="color:aqua;">#</span>} [Cc]yan      cyan
+		{<span style="color:white;">#</span>} [Ww]hite     white
+		{<span style="color:white;">#</span>} [Dd]efault   default
+		{*} [Rr]andom    random [--exclude-random=&lt;foreground color&gt;]
+
+	First character of color name in upper case denotes increased intensity,
+	whereas for lower case colors will be of normal intensity.
+
+	Options
+		    --clean
+		    --clean-all
+		    --exclude-random
+		-h, --help
+		-V, --version
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize cyan /etc/motd
+<span style="color:aqua;"></span>
+<span style="color:aqua;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="color:aqua;">the exact distribution terms for each program are described in the</span>
+<span style="color:aqua;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="color:aqua;"></span>
+<span style="color:aqua;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="color:aqua;">permitted by applicable law.</span>
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize cyan /etc/motd | ./colorize --clean
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize Yellow /etc/motd
+<span style="color:yellow;font-weight:bold;"></span>
+<span style="color:yellow;font-weight:bold;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="color:yellow;font-weight:bold;">the exact distribution terms for each program are described in the</span>
+<span style="color:yellow;font-weight:bold;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="color:yellow;font-weight:bold;"></span>
+<span style="color:yellow;font-weight:bold;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="color:yellow;font-weight:bold;">permitted by applicable law.</span>
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize white/blue /etc/motd
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;"></span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;">the exact distribution terms for each program are described in the</span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;"></span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="background-color:#3333FF;"></span><span style="color:white;background-color:#3333FF;">permitted by applicable law.</span>
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --exclude-random=black random /etc/motd
+<span style="color:red;"></span>
+<span style="color:red;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="color:red;">the exact distribution terms for each program are described in the</span>
+<span style="color:red;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="color:red;"></span>
+<span style="color:red;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="color:red;">permitted by applicable law.</span>
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize green /etc/motd | head -n2 | tail -n1
+<span style="color:lime;">The programs included with the Debian GNU/Linux system are free software;</span>
+</pre>
+<pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --version
+colorize v0.59-16-gf340b58 (compiled at Mar 18 2017, 00:08:31)
+Compiler flags: &quot;-ansi -pedantic &quot;
+Linker flags: &quot;&quot;
+Preprocessor flags: &quot;&quot;
+Buffer size: 4K
+Color separator: '/'
+Debugging: no
+</pre>
+</body>
 </html>
