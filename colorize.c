@@ -369,13 +369,9 @@ process_opts (int argc, char **argv)
             case 0: /* long opts */
               switch (opt_type)
                 {
-                  case OPT_ATTR: {
-                    char *opt;
-                    opt = xstrdup (optarg);
-                    process_opt_attr (opt);
-                    free (opt);
+                  case OPT_ATTR:
+                    process_opt_attr (optarg);
                     break;
-                  }
                   case OPT_CLEAN:
                     clean = true;
                     break;
