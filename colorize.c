@@ -45,6 +45,7 @@
 #define to_str(arg) str(arg)
 
 #define streq(s1, s2) (strcmp (s1, s2) == 0)
+#define strneq(s1, s2, n) (strncmp (s1, s2, n) == 0)
 
 #if !DEBUG
 # define xmalloc(size)          malloc_wrap(size)
@@ -116,6 +117,8 @@
 #endif
 
 #define DEBUG_FILE "debug.txt"
+
+#define MAX_ATTRIBUTE_CHARS (5 * 2)
 
 #define VERSION "0.60"
 
@@ -194,7 +197,8 @@ static const struct {
 };
 
 enum {
-    OPT_CLEAN = 1,
+    OPT_ATTR = 1,
+    OPT_CLEAN,
     OPT_CLEAN_ALL,
     OPT_EXCLUDE_RANDOM,
     OPT_HELP,
@@ -202,6 +206,7 @@ enum {
 };
 static int opt_type;
 static const struct option long_opts[] = {
+    { "attr",           required_argument, &opt_type, OPT_ATTR           },
     { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
     { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
     { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
@@ -221,28 +226,31 @@ static void **vars_list;
 static bool clean;
 static bool clean_all;
 
+static char attr[MAX_ATTRIBUTE_CHARS + 1];
 static char *exclude;
 
 static const char *program_name;
 
 static void process_opts (int, char **);
+static void process_opt_attr (const char *);
+static void write_attr (unsigned int);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
 static void cleanup (void);
 static void free_color_names (struct color_name **);
-static void process_args (unsigned int, char **, bool *, const struct color **, const char **, FILE **);
+static void process_args (unsigned int, char **, char *, const struct color **, const char **, FILE **);
 static void process_file_arg (const char *, const char **, FILE **);
 static void skip_path_colors (const char *, const char *, const struct stat *);
-static void gather_color_names (const char *, bool *, struct color_name **);
-static void read_print_stream (bool, const struct color **, const char *, FILE *);
+static void gather_color_names (const char *, char *, struct color_name **);
+static void read_print_stream (const char *, const struct color **, const char *, FILE *);
 static void merge_print_line (const char *, const char *, FILE *);
 static void complete_part_line (const char *, char **, FILE *);
 static bool get_next_char (char *, const char **, FILE *, bool *);
 static void save_char (char, char **, size_t *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
-static void print_line (bool, const struct color **, const char * const, unsigned int);
+static void print_line (const char *, const struct color **, const char * const, unsigned int);
 static void print_clean (const char *);
 static bool is_esc (const char *);
 static const char *get_end_of_esc (const char *);
@@ -250,9 +258,9 @@ static const char *get_end_of_text (const char *);
 static void print_text (const char *, size_t);
 static bool gather_esc_offsets (const char *, const char **, const char **);
 static bool validate_esc_clean_all (const char **);
-static bool validate_esc_clean (int, unsigned int, const char **, bool *);
+static bool validate_esc_clean (int, unsigned int, unsigned int *, const char **, bool *);
 static bool is_reset (int, unsigned int, const char **);
-static bool is_bold (int, unsigned int, const char **);
+static bool is_attr (int, unsigned int, unsigned int, const char **);
 static bool is_fg_color (int, const char **);
 static bool is_bg_color (int, unsigned int, const char **);
 #if !DEBUG
@@ -283,8 +291,6 @@ main (int argc, char **argv)
 {
     unsigned int arg_cnt;
 
-    bool bold = false;
-
     const struct color *colors[2] = {
         NULL, /* foreground */
         NULL, /* background */
@@ -300,6 +306,8 @@ main (int argc, char **argv)
 #if DEBUG
     log = open_file (DEBUG_FILE, "w");
 #endif
+
+    attr[0] = '\0';
 
     process_opts (argc, argv);
 
@@ -332,8 +340,8 @@ main (int argc, char **argv)
     if (clean || clean_all)
       process_file_arg (argv[optind], &file, &stream);
     else
-      process_args (arg_cnt, &argv[optind], &bold, colors, &file, &stream);
-    read_print_stream (bold, colors, file, stream);
+      process_args (arg_cnt, &argv[optind], &attr[0], colors, &file, &stream);
+    read_print_stream (&attr[0], colors, file, stream);
 
     RELEASE_VAR (exclude);
 
@@ -361,6 +369,13 @@ process_opts (int argc, char **argv)
             case 0: /* long opts */
               switch (opt_type)
                 {
+                  case OPT_ATTR: {
+                    char *opt;
+                    opt = xstrdup (optarg);
+                    process_opt_attr (opt);
+                    free (opt);
+                    break;
+                  }
                   case OPT_CLEAN:
                     clean = true;
                     break;
@@ -404,6 +419,46 @@ process_opts (int argc, char **argv)
               ABORT_TRACE ();
           }
       }
+}
+
+static void
+process_opt_attr (const char *p)
+{
+    while (*p)
+      {
+        const char *s;
+        if (!isalnum (*p))
+          vfprintf_fail (formats[FMT_GENERIC], "--attr switch must be provided a string");
+        s = p;
+        while (isalnum (*p))
+          p++;
+        if (*p != '\0' && *p != ',')
+          vfprintf_fail (formats[FMT_GENERIC], "--attr switch must have strings separated by ,");
+        else
+          {
+            /* If atttributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS! */
+            if (p - s == 4 && strneq (s, "bold", 4))
+              write_attr (1);
+            else if (p - s == 10 && strneq (s, "underscore", 10))
+              write_attr (4);
+            else if (p - s == 5 && strneq (s, "blink", 5))
+              write_attr (5);
+            else if (p - s == 7 && strneq (s, "reverse", 7))
+              write_attr (7);
+            else if (p - s == 9 && strneq (s, "concealed", 9))
+              write_attr (8);
+            else
+              vfprintf_fail (formats[FMT_GENERIC], "--attr switch must be provided valid attribute names");
+          }
+        if (*p)
+          p++;
+      }
+}
+
+static void
+write_attr (unsigned int val)
+{
+    snprintf (attr + strlen (attr), 3, "%u;", val);
 }
 
 static void
@@ -550,7 +605,7 @@ free_color_names (struct color_name **color_names)
 }
 
 static void
-process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct color **colors, const char **file, FILE **stream)
+process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct color **colors, const char **file, FILE **stream)
 {
     int ret;
     char *p;
@@ -587,7 +642,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, bool *bold, const struct
           vfprintf_fail (formats[FMT_STRING], "one color pair allowed only for string", color_string);
       }
 
-    gather_color_names (color_string, bold, color_names);
+    gather_color_names (color_string, attr, color_names);
 
     assert (color_names[FOREGROUND]);
 
@@ -705,7 +760,7 @@ skip_path_colors (const char *color_string, const char *file_string, const struc
 }
 
 static void
-gather_color_names (const char *color_string, bool *bold, struct color_name **color_names)
+gather_color_names (const char *color_string, char *attr, struct color_name **color_names)
 {
     unsigned int index;
     char *color, *p, *str;
@@ -743,7 +798,7 @@ gather_color_names (const char *color_string, bool *bold, struct color_name **co
             switch (index)
               {
                 case FOREGROUND:
-                  *bold = true;
+                  snprintf (attr + strlen (attr), 3, "1;");
                   break;
                 case BACKGROUND:
                   vfprintf_fail (formats[FMT_COLOR], tables[BACKGROUND].desc, color, "cannot be bold");
@@ -769,7 +824,7 @@ gather_color_names (const char *color_string, bool *bold, struct color_name **co
 }
 
 static void
-read_print_stream (bool bold, const struct color **colors, const char *file, FILE *stream)
+read_print_stream (const char *attr, const struct color **colors, const char *file, FILE *stream)
 {
     char buf[BUF_SIZE + 1];
     unsigned int flags = 0;
@@ -800,13 +855,13 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
               vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
             p = eol + SKIP_LINE_ENDINGS (flags);
             *eol = '\0';
-            print_line (bold, colors, line, flags);
+            print_line (attr, colors, line, flags);
             line = p;
           }
         if (feof (stream))
           {
             if (*line != '\0')
-              print_line (bold, colors, line, 0);
+              print_line (attr, colors, line, 0);
           }
         else if (*line != '\0')
           {
@@ -814,7 +869,7 @@ read_print_stream (bool bold, const struct color **colors, const char *file, FIL
             if ((clean || clean_all) && (p = strrchr (line, '\033')))
               merge_print_line (line, p, stream);
             else
-              print_line (bold, colors, line, 0);
+              print_line (attr, colors, line, 0);
           }
       }
 }
@@ -1021,7 +1076,7 @@ find_color_entry (const struct color_name *color_name, unsigned int index, const
 }
 
 static void
-print_line (bool bold, const struct color **colors, const char *const line, unsigned int flags)
+print_line (const char *attr, const struct color **colors, const char *const line, unsigned int flags)
 {
     /* --clean[-all] */
     if (clean || clean_all)
@@ -1032,7 +1087,7 @@ print_line (bool bold, const struct color **colors, const char *const line, unsi
         if (colors[BACKGROUND] && colors[BACKGROUND]->code)
           printf ("\033[%s", colors[BACKGROUND]->code);
         if (colors[FOREGROUND]->code)
-          printf ("\033[%s%s%s\033[0m", bold ? "1;" : "", colors[FOREGROUND]->code, line);
+          printf ("\033[%s%s%s\033[0m", attr, colors[FOREGROUND]->code, line);
         else
           printf (formats[FMT_GENERIC], line);
       }
@@ -1116,8 +1171,9 @@ gather_esc_offsets (const char *p, const char **start, const char **end)
         else if (clean)
           {
             bool check_values;
-            unsigned int iter = 0;
+            unsigned int prev_iter, iter;
             const char *digit;
+            prev_iter = iter = 0;
             do {
               check_values = false;
               iter++;
@@ -1138,7 +1194,7 @@ gather_esc_offsets (const char *p, const char **start, const char **end)
                     val[i] = *digit++;
                   val[i] = '\0';
                   value = atoi (val);
-                  valid = validate_esc_clean (value, iter, &p, &check_values);
+                  valid = validate_esc_clean (value, iter, &prev_iter, &p, &check_values);
                 }
             } while (check_values);
           }
@@ -1163,14 +1219,15 @@ validate_esc_clean_all (const char **p)
 }
 
 static bool
-validate_esc_clean (int value, unsigned int iter, const char **p, bool *check_values)
+validate_esc_clean (int value, unsigned int iter, unsigned int *prev_iter, const char **p, bool *check_values)
 {
     if (is_reset (value, iter, p))
       return true;
-    else if (is_bold (value, iter, p))
+    else if (is_attr (value, iter, *prev_iter, p))
       {
         (*p)++;
         *check_values = true;
+        *prev_iter = iter;
         return false; /* partial escape sequence, need another valid value */
       }
     else if (is_fg_color (value, p))
@@ -1188,9 +1245,9 @@ is_reset (int value, unsigned int iter, const char **p)
 }
 
 static bool
-is_bold (int value, unsigned int iter, const char **p)
+is_attr (int value, unsigned int iter, unsigned int prev_iter, const char **p)
 {
-    return (value == 1 && iter == 1 && **p == ';');
+    return ((value > 0 && value < 10) && (iter - prev_iter == 1) && **p == ';');
 }
 
 static bool
