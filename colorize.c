@@ -436,7 +436,7 @@ process_opt_attr (const char *p)
           vfprintf_fail (formats[FMT_GENERIC], "--attr switch must have strings separated by ,");
         else
           {
-            /* If atttributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS! */
+            /* If attributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS!  */
             if (p - s == 4 && strneq (s, "bold", 4))
               write_attr (1);
             else if (p - s == 10 && strneq (s, "underscore", 10))
