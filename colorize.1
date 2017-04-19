@@ -1,10 +1,10 @@
-.TH COLORIZE 1 "2015-03-02" "colorize v0.60" "User Commands"
+.TH COLORIZE 1 "2017-04-19" "colorize v0.60" "User Commands"
 .SH NAME
 colorize \- colorize text with escape sequences
 .SH SYNOPSIS
-\fBcolorize\fR [\fIoption\fR] (\fIforeground\fR) [\fIfile\fR]
+\fBcolorize\fR [\fIoption\fR]... (\fIforeground\fR) [\fIfile\fR]
 .PP
-\fBcolorize\fR [\fIoption\fR] (\fIforeground\fR)/(\fIbackground\fR) [\fIfile\fR]
+\fBcolorize\fR [\fIoption\fR]... (\fIforeground\fR)/(\fIbackground\fR) [\fIfile\fR]
 .PP
 \fBcolorize\fR \-\-clean[\-all] [\fIfile\fR]
 .PP
@@ -28,6 +28,12 @@ were emitted by colorize (see NOTES for list), whereas \-\-clean\-all
 omits all valid ones.  If in doubt, consider using \-\-clean\-all.
 .SH OPTIONS
 .TP
+.BR \-\-attr=\fIATTR1,ATTR2,...\fR
+set attributes by name
+.RS
+Currently: bold, underscore, blink, reverse and concealed.
+.RE
+.TP
 .BR \-\-clean
 clean text from color escape sequences emitted by colorize
 .TP
@@ -48,7 +54,7 @@ as follows:
 .IP * 4
 30-37,39 (foreground colors)
 .IP * 4
-1;30-37,39 (bold foreground colors)
+1-9;30-37,39 (foreground colors with attributes)
 .IP * 4
 40-47,49 (background colors)
 .IP * 4
