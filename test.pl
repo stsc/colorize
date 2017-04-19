@@ -12,7 +12,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 24;
+my $tests = 28;
 
 my $valgrind_cmd = '';
 {
@@ -82,6 +82,19 @@ SKIP: {
         is(qx(printf %s "hello world" | $program Magenta | $valgrind_cmd$program $switch),        'hello world', "$type colored line");
         is_deeply([split /\n/, qx($program cyan $infile1 | $valgrind_cmd$program $switch)], [split /\n/, $text], "$type colored text");
 
+        {
+            my @attrs = qw(bold underscore blink reverse concealed);
+
+            my $ok = true;
+            foreach my $attr (@attrs) {
+                $ok &= qx(printf %s "$attr" | $program green --attr=$attr | $valgrind_cmd$program $switch) eq $attr;
+            }
+            ok($ok, "$type attribute");
+
+            my $attrs = join ',', @attrs;
+            is(qx(printf %s "$attrs" | $program green --attr=$attrs | $valgrind_cmd$program $switch), $attrs, "$type attributes");
+        }
+
         ok(qx(printf %s "\e[\e[33m" | $valgrind_cmd$program $switch) eq "\e[", "$type with invalid sequence");
     };
 
@@ -143,6 +156,14 @@ EOT
         next if $color eq 'none';
         my $bold_color = ucfirst $color;
         system(qq(printf '%s\n' "$bold_color" | $program $bold_color));
+    }
+
+    print <<'EOT';
+Attributes
+==========
+EOT
+    foreach my $attr (qw(bold underscore blink reverse concealed)) {
+        system(qq(printf '%s\n' "$attr" | $program green --attr=$attr));
     }
 
     unlink $program;
