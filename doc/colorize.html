@@ -28,6 +28,7 @@ Usage: ./colorize (foreground) OR (foreground)/(background) OR --clean[-all] [-|
 	whereas for lower case colors will be of normal intensity.
 
 	Options
+		    --attr
 		    --clean
 		    --clean-all
 		    --exclude-random
@@ -85,12 +86,22 @@ permitted by applicable law.
 <span style="color:red;">permitted by applicable law.</span>
 </pre>
 <pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --attr=bold magenta /etc/motd
+<span style="color:fuchsia;font-weight:bold;"></span>
+<span style="color:fuchsia;font-weight:bold;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="color:fuchsia;font-weight:bold;">the exact distribution terms for each program are described in the</span>
+<span style="color:fuchsia;font-weight:bold;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="color:fuchsia;font-weight:bold;"></span>
+<span style="color:fuchsia;font-weight:bold;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="color:fuchsia;font-weight:bold;">permitted by applicable law.</span>
+</pre>
+<pre>
 <span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize green /etc/motd | head -n2 | tail -n1
 <span style="color:lime;">The programs included with the Debian GNU/Linux system are free software;</span>
 </pre>
 <pre>
 <span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --version
-colorize v0.59-16-gf340b58 (compiled at Mar 18 2017, 00:08:31)
+colorize v0.60-9-g847a1b1 (compiled at Apr 22 2017, 14:32:01)
 Compiler flags: &quot;-ansi -pedantic &quot;
 Linker flags: &quot;&quot;
 Preprocessor flags: &quot;&quot;

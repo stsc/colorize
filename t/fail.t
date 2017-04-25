@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 20;
+my $tests = 23;
 
 my $run_program_fail = sub
 {
@@ -40,6 +40,9 @@ SKIP: {
     my $dir  = tempdir(CLEANUP => true);
 
     my @set = (
+        [ '--attr=:',                'must be provided a string'                   ],
+        [ '--attr=bold:underscore',  'must have strings separated by ,'            ],
+        [ '--attr=b0ld',             'must be provided valid attribute names'      ],
         [ '--exclude-random=random', 'must be provided a plain color'              ],
         [ '--clean --clean-all',     'mutually exclusive'                          ],
         [ '--clean file1 file2',     'more than one file'                          ],
