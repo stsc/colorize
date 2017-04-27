@@ -1,3 +1,9 @@
+colorize (0.61-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Steven Schubiger <stsc@refcnt.org>  Thu, 27 Apr 2017 19:41:04 +0200
+
 colorize (0.60-1) unstable; urgency=low
 
   * Initial Debian package version.
