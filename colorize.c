@@ -215,6 +215,14 @@ static const struct option long_opts[] = {
     {  NULL,            0,                 NULL,      0                  },
 };
 
+enum attr_type {
+    ATTR_BOLD = 0x01,
+    ATTR_UNDERSCORE = 0x02,
+    ATTR_BLINK = 0x04,
+    ATTR_REVERSE = 0x08,
+    ATTR_CONCEALED = 0x10
+};
+
 static FILE *stream;
 #if DEBUG
 static FILE *log;
@@ -233,7 +241,7 @@ static const char *program_name;
 
 static void process_opts (int, char **);
 static void process_opt_attr (const char *);
-static void write_attr (unsigned int);
+static void write_attr (unsigned int, unsigned int *, enum attr_type, const char *);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
@@ -420,6 +428,20 @@ process_opts (int argc, char **argv)
 static void
 process_opt_attr (const char *p)
 {
+    /* If attributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS!  */
+    const struct attr {
+        const char *name;
+        unsigned int val;
+        enum attr_type type;
+    } attrs[] = {
+        { "bold",       1, ATTR_BOLD       },
+        { "underscore", 4, ATTR_UNDERSCORE },
+        { "blink",      5, ATTR_BLINK      },
+        { "reverse",    7, ATTR_REVERSE    },
+        { "concealed",  8, ATTR_CONCEALED  },
+    };
+    unsigned int attr_types = 0;
+
     while (*p)
       {
         const char *s;
@@ -432,18 +454,19 @@ process_opt_attr (const char *p)
           vfprintf_fail (formats[FMT_GENERIC], "--attr switch must have strings separated by ,");
         else
           {
-            /* If attributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS!  */
-            if (p - s == 4 && strneq (s, "bold", 4))
-              write_attr (1);
-            else if (p - s == 10 && strneq (s, "underscore", 10))
-              write_attr (4);
-            else if (p - s == 5 && strneq (s, "blink", 5))
-              write_attr (5);
-            else if (p - s == 7 && strneq (s, "reverse", 7))
-              write_attr (7);
-            else if (p - s == 9 && strneq (s, "concealed", 9))
-              write_attr (8);
-            else
+            bool valid_attr = false;
+            unsigned int i;
+            for (i = 0; i < sizeof (attrs) / sizeof (struct attr); i++)
+              {
+                size_t name_len = strlen (attrs[i].name);
+                if ((size_t)(p - s) == name_len && strneq (s, attrs[i].name, name_len))
+                  {
+                    write_attr (attrs[i].val, &attr_types, attrs[i].type, attrs[i].name);
+                    valid_attr = true;
+                    break;
+                  }
+              }
+            if (!valid_attr)
               vfprintf_fail (formats[FMT_GENERIC], "--attr switch must be provided valid attribute names");
           }
         if (*p)
@@ -452,9 +475,12 @@ process_opt_attr (const char *p)
 }
 
 static void
-write_attr (unsigned int val)
+write_attr (unsigned int val, unsigned int *attr_types, enum attr_type attr_type, const char *attr_name)
 {
+    if (*attr_types & attr_type)
+      vfprintf_fail ("--attr switch has attribute '%s' twice or more", attr_name);
     snprintf (attr + strlen (attr), 3, "%u;", val);
+    *attr_types |= attr_type;
 }
 
 static void
