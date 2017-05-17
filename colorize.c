@@ -458,7 +458,7 @@ process_opt_attr (const char *p)
             unsigned int i;
             for (i = 0; i < sizeof (attrs) / sizeof (struct attr); i++)
               {
-                size_t name_len = strlen (attrs[i].name);
+                const size_t name_len = strlen (attrs[i].name);
                 if ((size_t)(p - s) == name_len && strneq (s, attrs[i].name, name_len))
                   {
                     write_attr (attrs[i].val, &attr_types, attrs[i].type, attrs[i].name);
