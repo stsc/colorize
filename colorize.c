@@ -768,15 +768,15 @@ skip_path_colors (const char *color_string, const char *file_string, const struc
 
     if (have_file)
       {
-        const char *file_exists = color_string;
+        const char *file_existing = color_string;
         if (file_string)
-          vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "cannot be used as color string");
+          vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "cannot be used as color string");
         else
           {
             if (VALID_FILE_TYPE (mode))
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "must be preceded by color string");
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "must be preceded by color string");
             else
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_exists, "is not a valid file type");
+              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "is not a valid file type");
           }
       }
 }
@@ -958,7 +958,7 @@ complete_part_line (const char *p, char **buf, FILE *stream)
             if (read_from_stream)
               save_char (ch, buf, &i, &size);
           }
-        else /* read next character */
+        else /* got next character */
           {
             got_next_char = true;
             break;
