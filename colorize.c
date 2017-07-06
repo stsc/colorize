@@ -222,6 +222,11 @@ enum attr_type {
     ATTR_REVERSE = 0x08,
     ATTR_CONCEALED = 0x10
 };
+struct attr {
+    const char *name;
+    unsigned int val;
+    enum attr_type type;
+};
 
 static FILE *stream;
 #if DEBUG
@@ -241,7 +246,7 @@ static const char *program_name;
 
 static void process_opts (int, char **);
 static void process_opt_attr (const char *);
-static void write_attr (unsigned int, unsigned int *, enum attr_type, const char *);
+static void write_attr (const struct attr *, unsigned int *);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
@@ -429,11 +434,7 @@ static void
 process_opt_attr (const char *p)
 {
     /* If attributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS!  */
-    const struct attr {
-        const char *name;
-        unsigned int val;
-        enum attr_type type;
-    } attrs[] = {
+    const struct attr attrs[] = {
         { "bold",       1, ATTR_BOLD       },
         { "underscore", 4, ATTR_UNDERSCORE },
         { "blink",      5, ATTR_BLINK      },
@@ -461,7 +462,7 @@ process_opt_attr (const char *p)
                 const size_t name_len = strlen (attrs[i].name);
                 if ((size_t)(p - s) == name_len && strneq (s, attrs[i].name, name_len))
                   {
-                    write_attr (attrs[i].val, &attr_types, attrs[i].type, attrs[i].name);
+                    write_attr (&attrs[i], &attr_types);
                     valid_attr = true;
                     break;
                   }
@@ -475,8 +476,12 @@ process_opt_attr (const char *p)
 }
 
 static void
-write_attr (unsigned int val, unsigned int *attr_types, enum attr_type attr_type, const char *attr_name)
+write_attr (const struct attr *attr_i, unsigned int *attr_types)
 {
+    const unsigned int val = attr_i->val;
+    const enum attr_type attr_type = attr_i->type;
+    const char *attr_name = attr_i->name;
+
     if (*attr_types & attr_type)
       vfprintf_fail ("--attr switch has attribute '%s' twice or more", attr_name);
     snprintf (attr + strlen (attr), 3, "%u;", val);
