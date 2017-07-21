@@ -557,22 +557,23 @@ print_version (void)
 #endif
     const char *version_prefix, *version_string;
     const char *c_flags, *ld_flags, *cpp_flags;
+    const char *const desc_flags_unknown = "unknown";
     struct bytes_size bytes_size;
     bool debug;
 #ifdef CFLAGS
     c_flags = to_str (CFLAGS);
 #else
-    c_flags = "unknown";
+    c_flags = desc_flags_unknown;
 #endif
 #ifdef LDFLAGS
     ld_flags = to_str (LDFLAGS);
 #else
-    ld_flags = "unknown";
+    ld_flags = desc_flags_unknown;
 #endif
 #ifdef CPPFLAGS
     cpp_flags = to_str (CPPFLAGS);
 #else
-    cpp_flags = "unknown";
+    cpp_flags = desc_flags_unknown;
 #endif
 #if DEBUG
     debug = true;
