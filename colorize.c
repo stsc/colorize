@@ -468,7 +468,14 @@ process_opt_attr (const char *p)
                   }
               }
             if (!valid_attr)
-              vfprintf_fail (formats[FMT_GENERIC], "--attr switch must be provided valid attribute names");
+              {
+                char *sep;
+                char *attr_invalid = xstrdup (s);
+                STACK_VAR (attr_invalid);
+                if ((sep = strchr (attr_invalid, ',')))
+                  *sep = '\0';
+                vfprintf_fail ("--attr switch attribute '%s' is not valid", attr_invalid);
+              }
           }
         if (*p)
           p++;

@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 24;
+my $tests = 25;
 
 my $run_program_fail = sub
 {
@@ -42,7 +42,8 @@ SKIP: {
     my @set = (
         [ '--attr=:',                'must be provided a string'                   ],
         [ '--attr=bold:underscore',  'must have strings separated by ,'            ],
-        [ '--attr=b0ld',             'must be provided valid attribute names'      ],
+        [ '--attr=b0ld',             'attribute \'b0ld\' is not valid'             ],
+        [ '--attr=b0ld,underscore',  'attribute \'b0ld\' is not valid'             ], # NULify comma
         [ '--attr=bold,bold',        'has attribute \'bold\' twice or more'        ],
         [ '--exclude-random=random', 'must be provided a plain color'              ],
         [ '--clean --clean-all',     'mutually exclusive'                          ],
