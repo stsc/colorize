@@ -469,11 +469,10 @@ process_opt_attr (const char *p)
               }
             if (!valid_attr)
               {
-                char *sep;
-                char *attr_invalid = xstrdup (s);
+                char *attr_invalid = xmalloc ((p - s) + 1);
                 STACK_VAR (attr_invalid);
-                if ((sep = strchr (attr_invalid, ',')))
-                  *sep = '\0';
+                strncpy (attr_invalid, s, p - s);
+                attr_invalid[p - s] = '\0';
                 vfprintf_fail ("--attr switch attribute '%s' is not valid", attr_invalid);
               }
           }

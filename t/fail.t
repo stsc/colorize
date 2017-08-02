@@ -43,7 +43,7 @@ SKIP: {
         [ '--attr=:',                'must be provided a string'                   ],
         [ '--attr=bold:underscore',  'must have strings separated by ,'            ],
         [ '--attr=b0ld',             'attribute \'b0ld\' is not valid'             ],
-        [ '--attr=b0ld,underscore',  'attribute \'b0ld\' is not valid'             ], # NULify comma
+        [ '--attr=b0ld,underscore',  'attribute \'b0ld\' is not valid'             ], # handle comma
         [ '--attr=bold,bold',        'has attribute \'bold\' twice or more'        ],
         [ '--exclude-random=random', 'must be provided a plain color'              ],
         [ '--clean --clean-all',     'mutually exclusive'                          ],
