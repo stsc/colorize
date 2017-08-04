@@ -694,6 +694,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
       }
 
     find_color_entries (color_names, colors);
+    assert (colors[FOREGROUND] != NULL);
     free_color_names (color_names);
 
     if (!colors[FOREGROUND]->code && colors[BACKGROUND] && colors[BACKGROUND]->code)
