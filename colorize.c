@@ -649,7 +649,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
     const char *color_string = arg_cnt >= 1 ? arg_strings[0] : NULL;
     const char *file_string  = arg_cnt == 2 ? arg_strings[1] : NULL;
 
-    assert (color_string);
+    assert (color_string != NULL);
 
     if (streq (color_string, "-"))
       {
@@ -678,7 +678,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
 
     gather_color_names (color_string, attr, color_names);
 
-    assert (color_names[FOREGROUND]);
+    assert (color_names[FOREGROUND] != NULL);
 
     if (color_names[BACKGROUND])
       {
@@ -739,8 +739,8 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
         *file = "stdin";
       }
 
-    assert (*stream);
-    assert (*file);
+    assert (*stream != NULL);
+    assert (*file != NULL);
 }
 
 static void
@@ -814,7 +814,7 @@ gather_color_names (const char *color_string, char *attr, struct color_name **co
           }
         else
           p = color + strlen (color);
-        assert (p);
+        assert (p != NULL);
 
         for (ch = color; *ch; ch++)
           if (!isalpha (*ch))
