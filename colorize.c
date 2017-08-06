@@ -538,13 +538,11 @@ print_help (void)
         const char *short_opt = NULL;
         unsigned int i;
         for (i = 0; i < sizeof (short_opts) / sizeof (struct short_opt); i++)
-          {
-            if (streq (opt->name, short_opts[i].name))
-              {
-                short_opt = short_opts[i].short_opt;
-                break;
-              }
-          }
+          if (streq (opt->name, short_opts[i].name))
+            {
+              short_opt = short_opts[i].short_opt;
+              break;
+            }
         if (short_opt)
           printf ("\t\t-%s, --%s\n", short_opt, opt->name);
         else
