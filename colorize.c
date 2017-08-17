@@ -120,7 +120,7 @@
 
 #define MAX_ATTRIBUTE_CHARS (5 * 2)
 
-#define VERSION "0.61"
+#define VERSION "0.62"
 
 typedef enum { false, true } bool;
 
