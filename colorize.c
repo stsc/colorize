@@ -474,6 +474,7 @@ process_opt_attr (const char *p)
                 strncpy (attr_invalid, s, p - s);
                 attr_invalid[p - s] = '\0';
                 vfprintf_fail ("--attr switch attribute '%s' is not valid", attr_invalid);
+                RELEASE_VAR (attr_invalid); /* never reached */
               }
           }
         if (*p)
