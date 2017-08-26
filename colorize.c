@@ -118,7 +118,7 @@
 
 #define DEBUG_FILE "debug.txt"
 
-#define MAX_ATTRIBUTE_CHARS (5 * 2)
+#define MAX_ATTRIBUTE_CHARS (6 * 2)
 
 #define VERSION "0.62"
 
