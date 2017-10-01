@@ -164,7 +164,7 @@ struct bytes_size {
     char unit;
 };
 
-enum fmts {
+enum {
     FMT_GENERIC,
     FMT_STRING,
     FMT_QUOTE,
@@ -188,7 +188,7 @@ static const char *formats[] = {
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
 
 static const struct {
-    struct color const *entries;
+    const struct color *entries;
     unsigned int count;
     const char *desc;
 } tables[] = {
