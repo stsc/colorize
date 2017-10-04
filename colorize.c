@@ -116,7 +116,9 @@
 # define COLOR_SEP_CHAR '/'
 #endif
 
-#define DEBUG_FILE "debug.txt"
+#if DEBUG
+# define DEBUG_FILE "debug.txt"
+#endif
 
 #define MAX_ATTRIBUTE_CHARS (6 * 2)
 
