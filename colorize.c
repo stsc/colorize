@@ -704,6 +704,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
         color_name.name = color_name.orig = "default";
 
         find_color_entry (&color_name, FOREGROUND, colors);
+        assert (colors[FOREGROUND]->code != NULL);
       }
 
     process_file_arg (file_string, file, stream);
