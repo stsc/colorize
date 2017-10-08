@@ -135,7 +135,7 @@ SKIP: {
     {
         # Check that a 'none' foreground color (with a background color present)
         # will be substituted by 'default'.
-        my $colored_text = qx(printf '%s' "foo bar baz" | $valgrind_cmd$program none/black);
+        my $colored_text = qx(printf %s "foo bar baz" | $valgrind_cmd$program none/black);
         is($colored_text, "\e[40m\e[39mfoo bar baz\e[0m", 'no color sequences printed');
     }
 
