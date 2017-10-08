@@ -12,7 +12,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 28;
+my $tests = 29;
 
 my $valgrind_cmd = '';
 {
@@ -130,6 +130,13 @@ SKIP: {
         my $sequences = 0;
         $sequences++ while $colored_text =~ /\e\[\d+m/g;
         is($sequences, 2, 'count of sequences printed');
+    }
+
+    {
+        # Check that a 'none' foreground color (with a background color present)
+        # will be substituted by 'default'.
+        my $colored_text = qx(printf '%s' "foo bar baz" | $valgrind_cmd$program none/black);
+        is($colored_text, "\e[40m\e[39mfoo bar baz\e[0m", 'no color sequences printed');
     }
 
     is(qx(printf %s "hello\nworld\r\n" | $valgrind_cmd$program none/none), "hello\nworld\r\n", 'stream mode');
