@@ -506,13 +506,16 @@ print_hint (void)
 static void
 print_help (void)
 {
-    struct short_opt {
+    struct opt_data {
         const char *name;
         const char *short_opt;
+        const char *arg;
     };
-    const struct short_opt short_opts[] = {
-        { "help",    "h" },
-        { "version", "V" },
+    const struct opt_data opts_data[] = {
+        { "attr",           NULL, "=ATTR1,ATTR2,..." },
+        { "exclude-random", NULL, "=COLOR"           },
+        { "help",           "h",  NULL               },
+        { "version",        "V",  NULL               },
     };
     const struct option *opt = long_opts;
     unsigned int i;
@@ -538,16 +541,21 @@ print_help (void)
     printf ("\n\tOptions\n");
     for (; opt->name; opt++)
       {
-        const char *short_opt = NULL;
+        const struct opt_data *opt_data = NULL;
         unsigned int i;
-        for (i = 0; i < sizeof (short_opts) / sizeof (struct short_opt); i++)
-          if (streq (opt->name, short_opts[i].name))
+        for (i = 0; i < sizeof (opts_data) / sizeof (struct opt_data); i++)
+          if (streq (opt->name, opts_data[i].name))
             {
-              short_opt = short_opts[i].short_opt;
+              opt_data = &opts_data[i];
               break;
             }
-        if (short_opt)
-          printf ("\t\t-%s, --%s\n", short_opt, opt->name);
+        if (opt_data)
+          {
+            if (opt_data->short_opt)
+              printf ("\t\t-%s, --%s\n", opt_data->short_opt, opt->name);
+            else
+              printf ("\t\t    --%s%s\n", opt->name, opt_data->arg);
+          }
         else
           printf ("\t\t    --%s\n", opt->name);
       }
