@@ -35,6 +35,14 @@ user permissions).
 
 Finally, clean up the working directory through `make clean'.
 
+Customizing instructions
+------------------------
+The default character ('/') which separates the foreground
+from the background color may be redefined:
+
+`make FLAGS=-DCOLOR_SEP_CHAR_COLON' -> defines as ':'
+`make FLAGS=-DCOLOR_SEP_CHAR_SLASH' -> defines as '/'
+
 Debugging instructions
 ----------------------
 For the sake of completeness, colorize can be also built with
