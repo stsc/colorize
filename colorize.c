@@ -73,7 +73,7 @@
 #define LF 0x01
 #define CR 0x02
 
-#define SKIP_LINE_ENDINGS(flags) (((flags) & CR) && ((flags) & LF) ? 2 : 1)
+#define SKIP_LINE_ENDINGS(flags) ((flags) == (CR|LF) ? 2 : 1)
 
 #define VALID_FILE_TYPE(mode) (S_ISREG (mode) || S_ISLNK (mode) || S_ISFIFO (mode))
 
