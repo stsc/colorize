@@ -1448,8 +1448,8 @@ has_color_name (const char *str, const char *name)
 {
     char *p;
 
-    assert (strlen (str));
-    assert (strlen (name));
+    assert (strlen (str) > 0);
+    assert (strlen (name) > 0);
 
     if (!(*str == *name || *str == toupper (*name)))
       return false;
