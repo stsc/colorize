@@ -1456,8 +1456,8 @@ has_color_name (const char *str, const char *name)
     else if (*(name + 1) != '\0'
      && !((p = strstr (str + 1, name + 1)) && p == str + 1))
       return false;
-
-    return true;
+    else
+      return true;
 }
 
 static FILE *
