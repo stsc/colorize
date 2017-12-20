@@ -122,6 +122,8 @@
 
 #define MAX_ATTRIBUTE_CHARS (6 * 2)
 
+#define PROGRAM_NAME "colorize"
+
 #define VERSION "0.63"
 
 typedef enum { false, true } bool;
@@ -597,7 +599,7 @@ print_version (void)
 #endif
     version_prefix = version ? "" : "v";
     version_string = version ? version : VERSION;
-    printf ("colorize %s%s (compiled at %s, %s)\n", version_prefix, version_string, __DATE__, __TIME__);
+    printf ("%s %s%s (compiled at %s, %s)\n", PROGRAM_NAME, version_prefix, version_string, __DATE__, __TIME__);
 
     printf ("Compiler flags: %s\n", c_flags);
     printf ("Linker flags: %s\n", ld_flags);
