@@ -12,7 +12,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 29;
+my $tests = 30;
 
 my $valgrind_cmd = '';
 {
@@ -142,6 +142,13 @@ SKIP: {
     is(qx(printf %s "hello\nworld\r\n" | $valgrind_cmd$program none/none), "hello\nworld\r\n", 'stream mode');
 
     is(system(qq(printf '%s\n' "hello world" | $valgrind_cmd$program random --exclude-random=black >/dev/null)), 0, 'switch exclude-random');
+
+    {
+        my $infile = $write_to_tmpfile->("foo\n\nbar");
+        is_deeply([split /\n/, qx($valgrind_cmd$program yellow --omit-color-empty $infile)],
+                  [split /\n/, "\e[33mfoo\e[0m\n\n\e[33mbar\e[0m"],
+                  'switch omit-color-empty');
+    }
 
     SKIP: {
         skip 'valgrind not found', 1 unless system('which valgrind >/dev/null 2>&1') == 0;
