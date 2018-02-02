@@ -205,18 +205,20 @@ enum {
     OPT_CLEAN,
     OPT_CLEAN_ALL,
     OPT_EXCLUDE_RANDOM,
+    OPT_OMIT_COLOR_EMPTY,
     OPT_HELP,
     OPT_VERSION
 };
 static int opt_type;
 static const struct option long_opts[] = {
-    { "attr",           required_argument, &opt_type, OPT_ATTR           },
-    { "clean",          no_argument,       &opt_type, OPT_CLEAN          },
-    { "clean-all",      no_argument,       &opt_type, OPT_CLEAN_ALL      },
-    { "exclude-random", required_argument, &opt_type, OPT_EXCLUDE_RANDOM },
-    { "help",           no_argument,       &opt_type, OPT_HELP           },
-    { "version",        no_argument,       &opt_type, OPT_VERSION        },
-    {  NULL,            0,                 NULL,      0                  },
+    { "attr",             required_argument, &opt_type, OPT_ATTR             },
+    { "clean",            no_argument,       &opt_type, OPT_CLEAN            },
+    { "clean-all",        no_argument,       &opt_type, OPT_CLEAN_ALL        },
+    { "exclude-random",   required_argument, &opt_type, OPT_EXCLUDE_RANDOM   },
+    { "omit-color-empty", no_argument,       &opt_type, OPT_OMIT_COLOR_EMPTY },
+    { "help",             no_argument,       &opt_type, OPT_HELP             },
+    { "version",          no_argument,       &opt_type, OPT_VERSION          },
+    {  NULL,              0,                 NULL,      0                    },
 };
 
 enum attr_type {
@@ -242,6 +244,7 @@ static void **vars_list;
 
 static bool clean;
 static bool clean_all;
+static bool omit_color_empty;
 
 static char attr[MAX_ATTRIBUTE_CHARS + 1];
 static char *exclude;
@@ -267,7 +270,7 @@ static bool get_next_char (char *, const char **, FILE *, bool *);
 static void save_char (char, char **, size_t *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
-static void print_line (const char *, const struct color **, const char * const, unsigned int);
+static void print_line (const char *, const struct color **, const char * const, unsigned int, bool);
 static void print_clean (const char *);
 static bool is_esc (const char *);
 static const char *get_end_of_esc (const char *);
@@ -413,6 +416,9 @@ process_opts (int argc, char **argv)
                       vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a plain color");
                     break;
                   }
+                  case OPT_OMIT_COLOR_EMPTY:
+                    omit_color_empty = true;
+                    break;
                   case OPT_HELP:
                     PRINT_HELP_EXIT ();
                   case OPT_VERSION:
@@ -888,6 +894,7 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
         line = buf;
         while ((eol = strpbrk (line, "\n\r")))
           {
+            const bool has_text = (eol > line);
             const char *p;
             flags &= ~(CR|LF);
             if (*eol == '\r')
@@ -902,13 +909,14 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
               vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
             p = eol + SKIP_LINE_ENDINGS (flags);
             *eol = '\0';
-            print_line (attr, colors, line, flags);
+            print_line (attr, colors, line, flags,
+                        omit_color_empty ? has_text : true);
             line = p;
           }
         if (feof (stream))
           {
             if (*line != '\0')
-              print_line (attr, colors, line, 0);
+              print_line (attr, colors, line, 0, true);
           }
         else if (*line != '\0')
           {
@@ -916,7 +924,7 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
             if ((clean || clean_all) && (p = strrchr (line, '\033')))
               merge_print_line (line, p, stream);
             else
-              print_line (attr, colors, line, 0);
+              print_line (attr, colors, line, 0, true);
           }
       }
 }
@@ -1123,12 +1131,13 @@ find_color_entry (const struct color_name *color_name, unsigned int index, const
 }
 
 static void
-print_line (const char *attr, const struct color **colors, const char *const line, unsigned int flags)
+print_line (const char *attr, const struct color **colors, const char *const line, unsigned int flags, bool emit_colors)
 {
     /* --clean[-all] */
     if (clean || clean_all)
       print_clean (line);
-    else
+    /* skip for --omit-color-empty? */
+    else if (emit_colors)
       {
         /* Foreground color code is guaranteed to be set when background color code is present.  */
         if (colors[BACKGROUND] && colors[BACKGROUND]->code)
