@@ -99,12 +99,12 @@
 
 #define ABORT_TRACE()                                                              \
     fprintf (stderr, "Aborting in source file %s, line %u\n", __FILE__, __LINE__); \
-    abort ();                                                                      \
+    abort ();
 
 #define CHECK_COLORS_RANDOM(color1, color2)        \
      streq (color_names[color1]->name, "random")   \
  && (streq (color_names[color2]->name, "none")     \
-  || streq (color_names[color2]->name, "default")) \
+  || streq (color_names[color2]->name, "default"))
 
 #define ALLOC_COMPLETE_PART_LINE 8
 
@@ -370,11 +370,11 @@ main (int argc, char **argv)
 
 #define PRINT_HELP_EXIT() \
     print_help ();        \
-    exit (EXIT_SUCCESS);  \
+    exit (EXIT_SUCCESS);
 
 #define PRINT_VERSION_EXIT() \
     print_version ();        \
-    exit (EXIT_SUCCESS);     \
+    exit (EXIT_SUCCESS);
 
 extern char *optarg;
 
@@ -1490,7 +1490,7 @@ open_file (const char *file, const char *mode)
     va_start (ap, fmt);                     \
     vfprintf (stderr, fmt, ap);             \
     va_end (ap);                            \
-    fprintf (stderr, "\n");                 \
+    fprintf (stderr, "\n");
 
 static void
 vfprintf_diag (const char *fmt, ...)
