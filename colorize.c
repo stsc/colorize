@@ -905,7 +905,7 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
               }
             else if (*eol == '\n')
               flags |= LF;
-            else
+            else /* never reached */
               vfprintf_fail (formats[FMT_FILE], file, "unrecognized line ending");
             p = eol + SKIP_LINE_ENDINGS (flags);
             *eol = '\0';
