@@ -661,7 +661,11 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
     int ret;
     char *p;
     struct stat sb;
-    struct color_name *color_names[3] = { NULL, NULL, NULL };
+    struct color_name *color_names[3] = {
+        NULL, /* foreground */
+        NULL, /* background */
+        NULL, /* sentinel value */
+    };
 
     const char *color_string = arg_cnt >= 1 ? arg_strings[0] : NULL;
     const char *file_string  = arg_cnt == 2 ? arg_strings[1] : NULL;
