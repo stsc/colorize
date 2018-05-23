@@ -339,8 +339,8 @@ main (int argc, char **argv)
           vfprintf_fail (formats[FMT_GENERIC], "--clean and --clean-all switch are mutually exclusive");
         if (arg_cnt > 1)
           {
-            const char *format = "%s %s";
-            const char *message = "switch cannot be used with more than one file";
+            const char *const format = "%s %s";
+            const char *const message = "switch cannot be used with more than one file";
             if (clean)
               vfprintf_fail (format, "--clean", message);
             else if (clean_all)
