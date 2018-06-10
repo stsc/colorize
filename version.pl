@@ -14,11 +14,11 @@ and system('git ls-files colorize.c --error-unmatch >/dev/null 2>&1') == 0) {
 
 if (length $version) {
     print <<"EOT";
-const char *version = "$version";
+const char *const version = "$version";
 EOT
 }
 else {
     print <<'EOT';
-const char *version = NULL;
+const char *const version = NULL;
 EOT
 }

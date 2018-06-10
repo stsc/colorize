@@ -576,7 +576,7 @@ print_version (void)
 #ifdef HAVE_VERSION
 # include "version.h"
 #else
-    const char *version = NULL;
+    const char *const version = NULL;
 #endif
     const char *version_prefix, *version_string;
     const char *c_flags, *ld_flags, *cpp_flags;
