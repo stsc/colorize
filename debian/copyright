@@ -1,13 +1,13 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: colorize
 Source: http://cgit.refcnt.org/colorize.git/
 
 Files: *
-Copyright: 2011-2016 Steven Schubiger <stsc@refcnt.org>
+Copyright: 2011-2018 Steven Schubiger <stsc@refcnt.org>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2016 Steven Schubiger <stsc@refcnt.org>
+Copyright: 2016-2018 Steven Schubiger <stsc@refcnt.org>
 License: GPL-3.0+
 
 License: GPL-3.0+
