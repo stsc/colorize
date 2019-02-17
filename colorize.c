@@ -73,6 +73,8 @@
 #define LF 0x01
 #define CR 0x02
 
+#define COUNT_OF(obj, type) (sizeof (obj) / sizeof (type))
+
 #define SKIP_LINE_ENDINGS(flags) ((flags) == (CR|LF) ? 2 : 1)
 
 #define VALID_FILE_TYPE(mode) (S_ISREG (mode) || S_ISLNK (mode) || S_ISFIFO (mode))
@@ -196,8 +198,8 @@ static const struct {
     unsigned int count;
     const char *desc;
 } tables[] = {
-    { fg_colors, sizeof (fg_colors) / sizeof (struct color), "foreground" },
-    { bg_colors, sizeof (bg_colors) / sizeof (struct color), "background" },
+    { fg_colors, COUNT_OF (fg_colors, struct color), "foreground" },
+    { bg_colors, COUNT_OF (bg_colors, struct color), "background" },
 };
 
 enum {
@@ -467,7 +469,7 @@ process_opt_attr (const char *p)
           {
             bool valid_attr = false;
             unsigned int i;
-            for (i = 0; i < sizeof (attrs) / sizeof (struct attr); i++)
+            for (i = 0; i < COUNT_OF (attrs, struct attr); i++)
               {
                 const size_t name_len = strlen (attrs[i].name);
                 if ((size_t)(p - s) == name_len && strneq (s, attrs[i].name, name_len))
@@ -551,7 +553,7 @@ print_help (void)
       {
         const struct opt_data *opt_data = NULL;
         unsigned int i;
-        for (i = 0; i < sizeof (opts_data) / sizeof (struct opt_data); i++)
+        for (i = 0; i < COUNT_OF (opts_data, struct opt_data); i++)
           if (streq (opt->name, opts_data[i].name))
             {
               opt_data = &opts_data[i];
