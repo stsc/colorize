@@ -1352,13 +1352,14 @@ realloc_wrap (void *ptr, size_t size)
     return p;
 }
 #else
+static const char *const format_debug = "%s: %10s %7lu bytes [source file %s, line %5u]\n";
 static void *
 malloc_wrap_debug (size_t size, const char *file, unsigned int line)
 {
     void *p = malloc (size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    fprintf (log, "%s: malloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)size, file, line);
+    fprintf (log, format_debug, program_name, "malloc'ed", (unsigned long)size, file, line);
     return p;
 }
 
@@ -1368,7 +1369,7 @@ calloc_wrap_debug (size_t nmemb, size_t size, const char *file, unsigned int lin
     void *p = calloc (nmemb, size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    fprintf (log, "%s: calloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)(nmemb * size), file, line);
+    fprintf (log, format_debug, program_name, "calloc'ed", (unsigned long)(nmemb * size), file, line);
     return p;
 }
 
@@ -1378,7 +1379,7 @@ realloc_wrap_debug (void *ptr, size_t size, const char *file, unsigned int line)
     void *p = realloc (ptr, size);
     if (!p)
       MEM_ALLOC_FAIL_DEBUG (file, line);
-    fprintf (log, "%s: realloc'ed %lu bytes [source file %s, line %u]\n", program_name, (unsigned long)size, file, line);
+    fprintf (log, format_debug, program_name, "realloc'ed", (unsigned long)size, file, line);
     return p;
 }
 #endif /* !DEBUG */
