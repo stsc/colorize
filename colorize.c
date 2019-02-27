@@ -253,6 +253,7 @@ static char *exclude;
 
 static const char *program_name;
 
+static void print_tstamp (FILE *);
 static void process_opts (int, char **);
 static void process_opt_attr (const char *);
 static void write_attr (const struct attr *, unsigned int *);
@@ -327,6 +328,7 @@ main (int argc, char **argv)
 
 #if DEBUG
     log = open_file (DEBUG_FILE, "w");
+    print_tstamp (log);
 #endif
 
     attr[0] = '\0';
@@ -368,6 +370,31 @@ main (int argc, char **argv)
     RELEASE_VAR (exclude);
 
     exit (EXIT_SUCCESS);
+}
+
+static void
+print_tstamp (FILE *log)
+{
+    time_t t;
+    struct tm *tm;
+    char str[128];
+    size_t written;
+
+    t = time (NULL);
+    tm = localtime (&t);
+    if (tm == NULL)
+      {
+        perror ("localtime");
+        exit (EXIT_FAILURE);
+      }
+    written = strftime (str, sizeof (str), "%Y-%m-%d %H:%M:%S %Z", tm);
+    if (written == 0)
+      vfprintf_fail (formats[FMT_GENERIC], "strftime: 0 returned");
+
+    fprintf (log, "%s\n", str);
+    while (written--)
+      fprintf (log, "=");
+    fprintf (log, "\n");
 }
 
 #define PRINT_HELP_EXIT() \
