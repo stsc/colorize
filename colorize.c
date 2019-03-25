@@ -253,7 +253,9 @@ static char *exclude;
 
 static const char *program_name;
 
+#if DEBUG
 static void print_tstamp (FILE *);
+#endif
 static void process_opts (int, char **);
 static void process_opt_attr (const char *);
 static void write_attr (const struct attr *, unsigned int *);
@@ -372,6 +374,7 @@ main (int argc, char **argv)
     exit (EXIT_SUCCESS);
 }
 
+#if DEBUG
 static void
 print_tstamp (FILE *log)
 {
@@ -396,6 +399,7 @@ print_tstamp (FILE *log)
       fprintf (log, "=");
     fprintf (log, "\n");
 }
+#endif
 
 #define PRINT_HELP_EXIT() \
     print_help ();        \
