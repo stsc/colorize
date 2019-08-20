@@ -526,7 +526,7 @@ process_opt_attr (const char *p, const bool is_opt)
     };
     unsigned int attr_types = 0;
     const char *desc_type[2] = { "--attr switch", "attr conf option" };
-    unsigned int DESC_TYPE = is_opt ? DESC_OPTION : DESC_CONF;
+    const unsigned int DESC_TYPE = is_opt ? DESC_OPTION : DESC_CONF;
 
     while (*p)
       {
