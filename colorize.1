@@ -1,4 +1,4 @@
-.TH COLORIZE 1 "2019-02-23" "colorize v0.64" "User Commands"
+.TH COLORIZE 1 "2019-08-22" "colorize v0.64" "User Commands"
 .SH NAME
 colorize \- colorize text on terminal with ANSI escape sequences
 .SH SYNOPSIS
@@ -51,6 +51,57 @@ show help screen and exit
 .TP
 .BR \-V ", " \-\-version
 display version data and exit
+.SH FILES
+.TP
+.B ~/.colorize.conf
+user configuration file
+.PP
+.RS
+If the aforementioned file exists, it is read, parsed and processed
+prior to handling the command-line options.  Command-line options
+override configuration values, but are currently not capable of
+unsetting them.  If unsetting is desired, comment them out or remove
+them.
+.RE
+.PP
+.RS
+.B Sample configuration file
+.RS
+.nf
+# ~/.colorize.conf
+attr = bold,underscore
+color = magenta # favorite one
+exclude-random = black
+omit-color-empty = yes
+.fi
+.RE
+.RE
+.PP
+.RS
+.B Configurable options and values
+.RS
+.nf
+attr             (values same as command-line option)
+color            (value  same as command-line colors)
+exclude-random   (value  same as command-line option)
+omit-color-empty (yes/no)
+.fi
+.RE
+.RE
+.PP
+.RS
+.B Syntax
+.RS
+Each line ought to start with a name of an option, followed by = and
+an optional value.  Leaving the value blank, unsets the option.
+.PP
+Whitespace is allowed before the option name, after the option name,
+before the option value and after the option value.
+.PP
+Comments may be placed before or after the option is set.  Everything
+following the '#' sign is treated as being commented out.
+.RE
+.RE
 .SH NOTES
 The list of color escape sequence codes being emitted and omitted is
 as follows:
