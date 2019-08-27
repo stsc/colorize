@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <wordexp.h>
 
 #ifndef DEBUG
 # define DEBUG 0
@@ -216,10 +217,22 @@ static const struct {
     { bg_colors, COUNT_OF (bg_colors, struct color), "background" },
 };
 
+static unsigned int opts_set;
+enum {
+    OPT_ATTR_SET = 0x01,
+    OPT_EXCLUDE_RANDOM_SET = 0x02,
+    OPT_OMIT_COLOR_EMPTY_SET = 0x04
+};
+static struct {
+    char *attr;
+    char *exclude_random;
+} opts_arg = { NULL, NULL };
+
 enum {
     OPT_ATTR = 1,
     OPT_CLEAN,
     OPT_CLEAN_ALL,
+    OPT_CONFIG,
     OPT_EXCLUDE_RANDOM,
     OPT_OMIT_COLOR_EMPTY,
     OPT_HELP,
@@ -230,6 +243,7 @@ static const struct option long_opts[] = {
     { "attr",             required_argument, &opt_type, OPT_ATTR             },
     { "clean",            no_argument,       &opt_type, OPT_CLEAN            },
     { "clean-all",        no_argument,       &opt_type, OPT_CLEAN_ALL        },
+    { "config",           required_argument, &opt_type, OPT_CONFIG           },
     { "exclude-random",   required_argument, &opt_type, OPT_EXCLUDE_RANDOM   },
     { "omit-color-empty", no_argument,       &opt_type, OPT_OMIT_COLOR_EMPTY },
     { "help",             no_argument,       &opt_type, OPT_HELP             },
@@ -270,13 +284,14 @@ static const char *program_name;
 #if DEBUG
 static void print_tstamp (FILE *);
 #endif
-static void process_opts (int, char **);
+static void process_opts (int, char **, char **);
 static void process_opt_attr (const char *, const bool);
 static void write_attr (const struct attr *, unsigned int *, const bool);
 static void process_opt_exclude_random (const char *, const bool);
 static void parse_conf (const char *, struct conf *);
 static void assign_conf (const char *, struct conf *, const char *, char *);
 static void init_conf_vars (const struct conf *);
+static void init_opts_vars (void);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
@@ -319,6 +334,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *, const char *, unsigned int);
 static char *str_concat_wrap (const char *, const char *, const char *, unsigned int);
+static char *expand_string (const char *);
 static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
@@ -342,11 +358,7 @@ main (int argc, char **argv)
 
     const char *file = NULL;
 
-    char *conf_file;
-    uid_t uid;
-    struct passwd *passwd;
-    size_t size;
-
+    char *conf_file = NULL;
     struct conf config = { NULL, NULL, NULL, NULL };
 
     program_name = argv[0];
@@ -361,22 +373,43 @@ main (int argc, char **argv)
 
     attr[0] = '\0';
 
+    process_opts (argc, argv, &conf_file);
+
 #ifdef CONF_FILE_TEST
     conf_file = to_str (CONF_FILE_TEST);
 #elif !defined(TEST)
-    uid = getuid ();
-    errno = 0;
-    if ((passwd = getpwuid (uid)) == NULL)
+    if (conf_file == NULL)
       {
-        if (errno == 0)
-          vfprintf_diag ("password file entry for uid %lu not found", (unsigned long)uid);
-        else
-          perror ("getpwuid");
-        exit (EXIT_FAILURE);
+        uid_t uid;
+        struct passwd *passwd;
+        size_t size;
+
+        uid = getuid ();
+        errno = 0;
+        if ((passwd = getpwuid (uid)) == NULL)
+          {
+            if (errno == 0)
+              vfprintf_diag ("password file entry for uid %lu not found", (unsigned long)uid);
+            else
+              perror ("getpwuid");
+            exit (EXIT_FAILURE);
+          }
+        size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
+        conf_file = xmalloc (size);
+        snprintf (conf_file, size, "%s/%s", passwd->pw_dir, CONF_FILE);
       }
-    size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
-    conf_file = xmalloc (size);
-    snprintf (conf_file, size, "%s/%s", passwd->pw_dir, CONF_FILE);
+    else
+      {
+        char *s;
+        if ((s = expand_string (conf_file)))
+          {
+            free (conf_file);
+            conf_file = s;
+          }
+        errno = 0;
+        if (access (conf_file, F_OK) == -1)
+          vfprintf_fail (formats[FMT_FILE], conf_file, strerror (errno));
+      }
 #endif
 #if defined(CONF_FILE_TEST) || !defined(TEST)
     if (access (conf_file, F_OK) != -1)
@@ -387,7 +420,7 @@ main (int argc, char **argv)
 #endif
     init_conf_vars (&config);
 
-    process_opts (argc, argv);
+    init_opts_vars ();
 
     arg_cnt = argc - optind;
 
@@ -466,7 +499,7 @@ print_tstamp (FILE *log)
 extern char *optarg;
 
 static void
-process_opts (int argc, char **argv)
+process_opts (int argc, char **argv, char **conf_file)
 {
     int opt;
     while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
@@ -477,8 +510,8 @@ process_opts (int argc, char **argv)
               switch (opt_type)
                 {
                   case OPT_ATTR:
-                    attr[0] = '\0'; /* Clear attr string to discard values from the config file.  */
-                    process_opt_attr (optarg, true);
+                    opts_set |= OPT_ATTR_SET;
+                    opts_arg.attr = xstrdup (optarg);
                     break;
                   case OPT_CLEAN:
                     clean = true;
@@ -486,11 +519,15 @@ process_opts (int argc, char **argv)
                   case OPT_CLEAN_ALL:
                     clean_all = true;
                     break;
+                  case OPT_CONFIG:
+                    *conf_file = xstrdup (optarg);
+                    break;
                   case OPT_EXCLUDE_RANDOM:
-                    process_opt_exclude_random (optarg, true);
+                    opts_set |= OPT_EXCLUDE_RANDOM_SET;
+                    opts_arg.exclude_random = xstrdup (optarg);
                     break;
                   case OPT_OMIT_COLOR_EMPTY:
-                    omit_color_empty = true;
+                    opts_set |= OPT_OMIT_COLOR_EMPTY_SET;
                     break;
                   case OPT_HELP:
                     PRINT_HELP_EXIT ();
@@ -602,6 +639,23 @@ process_opt_exclude_random (const char *s, const bool is_opt)
     if (!valid)
       vfprintf_fail ("%s must be provided a plain color",
                      is_opt ? "--exlude-random switch" : "exclude-random conf option");
+}
+
+static void
+init_opts_vars (void)
+{
+    if (opts_set & OPT_ATTR_SET)
+      {
+        attr[0] = '\0'; /* Clear attr string to discard values from the config file.  */
+        process_opt_attr (opts_arg.attr, true);
+      }
+    if (opts_set & OPT_EXCLUDE_RANDOM_SET)
+      process_opt_exclude_random (opts_arg.exclude_random, true);
+    if (opts_set & OPT_OMIT_COLOR_EMPTY_SET)
+      omit_color_empty = true;
+
+    free (opts_arg.attr);
+    free (opts_arg.exclude_random);
 }
 
 #define IS_SPACE(c) ((c) == ' ' || (c) == '\t')
@@ -743,6 +797,7 @@ print_help (void)
     };
     const struct opt_data opts_data[] = {
         { "attr",           NULL, "=ATTR1,ATTR2,..." },
+        { "config",         NULL, "=PATH"            },
         { "exclude-random", NULL, "=COLOR"           },
         { "help",           "h",  NULL               },
         { "version",        "V",  NULL               },
@@ -1662,6 +1717,20 @@ str_concat_wrap (const char *str1, const char *str2, const char *file, unsigned 
     *p = '\0';
 
     return str;
+}
+
+static char *
+expand_string (const char *str)
+{
+    char *s = NULL;
+    wordexp_t p;
+
+    wordexp (str, &p, 0);
+    if (p.we_wordc >= 1)
+      s = xstrdup (p.we_wordv[0]);
+    wordfree (&p);
+
+    return s;
 }
 
 static bool
