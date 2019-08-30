@@ -663,6 +663,7 @@ init_opts_vars (void)
 static void
 parse_conf (const char *conf_file, struct conf *config)
 {
+    unsigned int cnt = 0;
     char line[256 + 1];
     FILE *conf;
 
@@ -674,8 +675,9 @@ parse_conf (const char *conf_file, struct conf *config)
         char *assign, *comment, *opt, *value;
         char *p;
 
+        cnt++;
         if (strlen (line) > (sizeof (line) - 2))
-          vfprintf_fail ("%s: line exceeds maximum of %u characters", conf_file, (unsigned int)(sizeof (line) - 2));
+          vfprintf_fail ("%s: line %u exceeds maximum of %u characters", conf_file, cnt, (unsigned int)(sizeof (line) - 2));
         if ((p = strrchr (line, '\n')))
           *p = '\0';
 /* NAME PARSING (start) */

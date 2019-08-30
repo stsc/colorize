@@ -48,7 +48,7 @@ SKIP: {
         [ 'omit-color-empty1=yes', 'option \'omit-color-empty1\' not recognized'               ],
         [ 'attr',                  'option \'attr\' not followed by ='                         ],
         [ 'attr bold',             'option \'attr\' not followed by ='                         ],
-        [ "color=$chars_exceed",   'line exceeds maximum of'                                   ],
+        [ "color=$chars_exceed",   'line 1 exceeds maximum of'                                 ],
     );
 
     foreach my $set (@set) {
