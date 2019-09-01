@@ -488,6 +488,10 @@ print_tstamp (FILE *log)
 }
 #endif
 
+#define DUP_CONFIG()               \
+    *conf_file = xstrdup (optarg); \
+    break;
+
 #define PRINT_HELP_EXIT() \
     print_help ();        \
     exit (EXIT_SUCCESS);
@@ -502,7 +506,7 @@ static void
 process_opts (int argc, char **argv, char **conf_file)
 {
     int opt;
-    while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
+    while ((opt = getopt_long (argc, argv, "c:hV", long_opts, NULL)) != -1)
       {
         switch (opt)
           {
@@ -520,8 +524,7 @@ process_opts (int argc, char **argv, char **conf_file)
                     clean_all = true;
                     break;
                   case OPT_CONFIG:
-                    *conf_file = xstrdup (optarg);
-                    break;
+                    DUP_CONFIG ();
                   case OPT_EXCLUDE_RANDOM:
                     opts_set |= OPT_EXCLUDE_RANDOM_SET;
                     opts_arg.exclude_random = xstrdup (optarg);
@@ -537,6 +540,8 @@ process_opts (int argc, char **argv, char **conf_file)
                     ABORT_TRACE ();
                 }
               break;
+            case 'c':
+              DUP_CONFIG ();
             case 'h':
               PRINT_HELP_EXIT ();
             case 'V':
@@ -799,7 +804,7 @@ print_help (void)
     };
     const struct opt_data opts_data[] = {
         { "attr",           NULL, "=ATTR1,ATTR2,..." },
-        { "config",         NULL, "=PATH"            },
+        { "config",         "c",  "=PATH"            },
         { "exclude-random", NULL, "=COLOR"           },
         { "help",           "h",  NULL               },
         { "version",        "V",  NULL               },
@@ -839,9 +844,12 @@ print_help (void)
         if (opt_data)
           {
             if (opt_data->short_opt)
-              printf ("\t\t-%s, --%s\n", opt_data->short_opt, opt->name);
+              printf ("\t\t-%s, --%s", opt_data->short_opt, opt->name);
             else
-              printf ("\t\t    --%s%s\n", opt->name, opt_data->arg);
+              printf ("\t\t    --%s", opt->name);
+            if (opt_data->arg)
+              printf ("%s", opt_data->arg);
+            printf ("\n");
           }
         else
           printf ("\t\t    --%s\n", opt->name);

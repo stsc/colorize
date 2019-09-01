@@ -8,12 +8,20 @@ use Colorize::Common qw(:defaults $write_to_tmpfile);
 use File::Temp qw(tmpnam);
 use Test::More;
 
-my $tests = 1;
+my $tests = 2;
 
 my $conf = <<'EOT';
 attr=bold
 color=blue
 omit-color-empty=yes
+EOT
+
+my $expected = <<"EOT";
+\e[1;34mfoo\e[0m
+
+\e[1;34mbar\e[0m
+
+\e[1;34mbaz\e[0m
 EOT
 
 plan tests => $tests;
@@ -35,13 +43,9 @@ EOT
     print {$fh} $conf;
     close($fh);
 
-    is(qx($program --config=$conf_file $infile), <<"EOT", 'config param');
-\e[1;34mfoo\e[0m
+    is(qx($program -c $conf_file $infile),       $expected, 'short option');
+    is(qx($program --config=$conf_file $infile), $expected, 'long option');
 
-\e[1;34mbar\e[0m
-
-\e[1;34mbaz\e[0m
-EOT
     unlink $program;
     unlink $conf_file;
 }
