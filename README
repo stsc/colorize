@@ -56,6 +56,12 @@ file provided here for the `tee' invocation will be populated
 with the captured output from both standard output and error
 stream.
 
+Configuration File
+------------------
+A user configuration file may be populated with options and
+according values.  See man page source file `colorize.1' for
+details.
+
 Documentation
 -------------
 See man page source file: colorize.1.
