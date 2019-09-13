@@ -7,6 +7,7 @@ use constant true  => 1;
 use constant false => 0;
 
 use Colorize::Common qw(:defaults $compiler_flags %BUF_SIZE $valgrind_command $write_to_tmpfile);
+use File::Find;
 use File::Temp qw(tmpnam);
 use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
@@ -28,8 +29,9 @@ my $valgrind_cmd = '';
 }
 
 {
-    my @test_files = glob('t/*.t');
-    eval { runtests(@test_files) } or warn $@;
+    my @test_files;
+    find ({ wanted => sub { push @test_files, $File::Find::name if /\.t$/ } }, 't');
+    eval { runtests(sort @test_files) } or warn $@;
 }
 
 plan tests => $tests;

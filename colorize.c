@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
+#include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,6 +37,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <wordexp.h>
 
 #ifndef DEBUG
 # define DEBUG 0
@@ -118,6 +120,8 @@
 # define COLOR_SEP_CHAR '/'
 #endif
 
+#define CONF_FILE ".colorize.conf"
+
 #if DEBUG
 # define DEBUG_FILE "debug.txt"
 #endif
@@ -129,6 +133,15 @@
 #define VERSION "0.64"
 
 typedef enum { false, true } bool;
+
+struct conf {
+    char *attr;
+    char *color;
+    char *exclude_random;
+    char *omit_color_empty;
+};
+
+enum { DESC_OPTION, DESC_CONF };
 
 struct color_name {
     char *name;
@@ -178,7 +191,8 @@ enum {
     FMT_RANDOM,
     FMT_ERROR,
     FMT_FILE,
-    FMT_TYPE
+    FMT_TYPE,
+    FMT_CONF
 };
 static const char *formats[] = {
     "%s",                     /* generic */
@@ -189,6 +203,7 @@ static const char *formats[] = {
     "less than %lu bytes %s", /* error   */
     "%s: %s",                 /* file    */
     "%s: %s: %s",             /* type    */
+    "%s: option '%s' %s"      /* conf    */
 };
 
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
@@ -202,10 +217,22 @@ static const struct {
     { bg_colors, COUNT_OF (bg_colors, struct color), "background" },
 };
 
+static unsigned int opts_set;
+enum {
+    OPT_ATTR_SET = 0x01,
+    OPT_EXCLUDE_RANDOM_SET = 0x02,
+    OPT_OMIT_COLOR_EMPTY_SET = 0x04
+};
+static struct {
+    char *attr;
+    char *exclude_random;
+} opts_arg = { NULL, NULL };
+
 enum {
     OPT_ATTR = 1,
     OPT_CLEAN,
     OPT_CLEAN_ALL,
+    OPT_CONFIG,
     OPT_EXCLUDE_RANDOM,
     OPT_OMIT_COLOR_EMPTY,
     OPT_HELP,
@@ -216,6 +243,7 @@ static const struct option long_opts[] = {
     { "attr",             required_argument, &opt_type, OPT_ATTR             },
     { "clean",            no_argument,       &opt_type, OPT_CLEAN            },
     { "clean-all",        no_argument,       &opt_type, OPT_CLEAN_ALL        },
+    { "config",           required_argument, &opt_type, OPT_CONFIG           },
     { "exclude-random",   required_argument, &opt_type, OPT_EXCLUDE_RANDOM   },
     { "omit-color-empty", no_argument,       &opt_type, OPT_OMIT_COLOR_EMPTY },
     { "help",             no_argument,       &opt_type, OPT_HELP             },
@@ -256,17 +284,23 @@ static const char *program_name;
 #if DEBUG
 static void print_tstamp (FILE *);
 #endif
-static void process_opts (int, char **);
-static void process_opt_attr (const char *);
-static void write_attr (const struct attr *, unsigned int *);
+static void process_opts (int, char **, char **);
+static void process_opt_attr (const char *, const bool);
+static void write_attr (const struct attr *, unsigned int *, const bool);
+static void process_opt_exclude_random (const char *, const bool);
+static void parse_conf (const char *, struct conf *);
+static void assign_conf (const char *, struct conf *, const char *, char *);
+static void init_conf_vars (const struct conf *);
+static void init_opts_vars (void);
 static void print_hint (void);
 static void print_help (void);
 static void print_version (void);
 static void cleanup (void);
 static void free_color_names (struct color_name **);
-static void process_args (unsigned int, char **, char *, const struct color **, const char **, FILE **);
+static void free_conf (struct conf *);
+static void process_args (unsigned int, char **, char *, const struct color **, const char **, FILE **, struct conf *);
 static void process_file_arg (const char *, const char **, FILE **);
-static void skip_path_colors (const char *, const char *, const struct stat *);
+static bool skip_path_colors (const char *, const char *, const struct stat *, const bool);
 static void gather_color_names (const char *, char *, struct color_name **);
 static void read_print_stream (const char *, const struct color **, const char *, FILE *);
 static void merge_print_line (const char *, const char *, FILE *);
@@ -300,6 +334,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *, const char *, unsigned int);
 static char *str_concat_wrap (const char *, const char *, const char *, unsigned int);
+static char *expand_string (const char *);
 static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
@@ -323,6 +358,9 @@ main (int argc, char **argv)
 
     const char *file = NULL;
 
+    char *conf_file = NULL;
+    struct conf config = { NULL, NULL, NULL, NULL };
+
     program_name = argv[0];
     atexit (cleanup);
 
@@ -335,7 +373,54 @@ main (int argc, char **argv)
 
     attr[0] = '\0';
 
-    process_opts (argc, argv);
+    process_opts (argc, argv, &conf_file);
+
+#ifdef CONF_FILE_TEST
+    conf_file = to_str (CONF_FILE_TEST);
+#elif !defined(TEST)
+    if (conf_file == NULL)
+      {
+        uid_t uid;
+        struct passwd *passwd;
+        size_t size;
+
+        uid = getuid ();
+        errno = 0;
+        if ((passwd = getpwuid (uid)) == NULL)
+          {
+            if (errno == 0)
+              vfprintf_diag ("password file entry for uid %lu not found", (unsigned long)uid);
+            else
+              perror ("getpwuid");
+            exit (EXIT_FAILURE);
+          }
+        size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
+        conf_file = xmalloc (size);
+        snprintf (conf_file, size, "%s/%s", passwd->pw_dir, CONF_FILE);
+      }
+    else
+      {
+        char *s;
+        if ((s = expand_string (conf_file)))
+          {
+            free (conf_file);
+            conf_file = s;
+          }
+        errno = 0;
+        if (access (conf_file, F_OK) == -1)
+          vfprintf_fail (formats[FMT_FILE], conf_file, strerror (errno));
+      }
+#endif
+#if defined(CONF_FILE_TEST) || !defined(TEST)
+    if (access (conf_file, F_OK) != -1)
+      parse_conf (conf_file, &config);
+#endif
+#if !defined(CONF_FILE_TEST) && !defined(TEST)
+    free (conf_file);
+#endif
+    init_conf_vars (&config);
+
+    init_opts_vars ();
 
     arg_cnt = argc - optind;
 
@@ -366,8 +451,10 @@ main (int argc, char **argv)
     if (clean || clean_all)
       process_file_arg (argv[optind], &file, &stream);
     else
-      process_args (arg_cnt, &argv[optind], &attr[0], colors, &file, &stream);
+      process_args (arg_cnt, &argv[optind], &attr[0], colors, &file, &stream, &config);
     read_print_stream (&attr[0], colors, file, stream);
+
+    free_conf (&config);
 
     RELEASE_VAR (exclude);
 
@@ -401,6 +488,10 @@ print_tstamp (FILE *log)
 }
 #endif
 
+#define DUP_CONFIG()               \
+    *conf_file = xstrdup (optarg); \
+    break;
+
 #define PRINT_HELP_EXIT() \
     print_help ();        \
     exit (EXIT_SUCCESS);
@@ -412,10 +503,10 @@ print_tstamp (FILE *log)
 extern char *optarg;
 
 static void
-process_opts (int argc, char **argv)
+process_opts (int argc, char **argv, char **conf_file)
 {
     int opt;
-    while ((opt = getopt_long (argc, argv, "hV", long_opts, NULL)) != -1)
+    while ((opt = getopt_long (argc, argv, "c:hV", long_opts, NULL)) != -1)
       {
         switch (opt)
           {
@@ -423,7 +514,8 @@ process_opts (int argc, char **argv)
               switch (opt_type)
                 {
                   case OPT_ATTR:
-                    process_opt_attr (optarg);
+                    opts_set |= OPT_ATTR_SET;
+                    opts_arg.attr = xstrdup (optarg);
                     break;
                   case OPT_CLEAN:
                     clean = true;
@@ -431,26 +523,14 @@ process_opts (int argc, char **argv)
                   case OPT_CLEAN_ALL:
                     clean_all = true;
                     break;
-                  case OPT_EXCLUDE_RANDOM: {
-                    bool valid = false;
-                    unsigned int i;
-                    exclude = xstrdup (optarg);
-                    STACK_VAR (exclude);
-                    for (i = 1; i < tables[GENERIC].count - 1; i++) /* skip color none and default */
-                      {
-                        const struct color *entry = &tables[GENERIC].entries[i];
-                        if (streq (exclude, entry->name))
-                          {
-                            valid = true;
-                            break;
-                          }
-                      }
-                    if (!valid)
-                      vfprintf_fail (formats[FMT_GENERIC], "--exclude-random switch must be provided a plain color");
+                  case OPT_CONFIG:
+                    DUP_CONFIG ();
+                  case OPT_EXCLUDE_RANDOM:
+                    opts_set |= OPT_EXCLUDE_RANDOM_SET;
+                    opts_arg.exclude_random = xstrdup (optarg);
                     break;
-                  }
                   case OPT_OMIT_COLOR_EMPTY:
-                    omit_color_empty = true;
+                    opts_set |= OPT_OMIT_COLOR_EMPTY_SET;
                     break;
                   case OPT_HELP:
                     PRINT_HELP_EXIT ();
@@ -460,6 +540,8 @@ process_opts (int argc, char **argv)
                     ABORT_TRACE ();
                 }
               break;
+            case 'c':
+              DUP_CONFIG ();
             case 'h':
               PRINT_HELP_EXIT ();
             case 'V':
@@ -474,7 +556,7 @@ process_opts (int argc, char **argv)
 }
 
 static void
-process_opt_attr (const char *p)
+process_opt_attr (const char *p, const bool is_opt)
 {
     /* If attributes are added to this "list", also increase MAX_ATTRIBUTE_CHARS!  */
     const struct attr attrs[] = {
@@ -485,17 +567,19 @@ process_opt_attr (const char *p)
         { "concealed",  8, ATTR_CONCEALED  },
     };
     unsigned int attr_types = 0;
+    const char *desc_type[2] = { "--attr switch", "attr conf option" };
+    const unsigned int DESC_TYPE = is_opt ? DESC_OPTION : DESC_CONF;
 
     while (*p)
       {
         const char *s;
         if (!isalnum (*p))
-          vfprintf_fail (formats[FMT_GENERIC], "--attr switch must be provided a string");
+          vfprintf_fail ("%s must be provided a string", desc_type[DESC_TYPE]);
         s = p;
         while (isalnum (*p))
           p++;
         if (*p != '\0' && *p != ',')
-          vfprintf_fail (formats[FMT_GENERIC], "--attr switch must have strings separated by ,");
+          vfprintf_fail ("%s must have strings separated by ,", desc_type[DESC_TYPE]);
         else
           {
             bool valid_attr = false;
@@ -505,7 +589,7 @@ process_opt_attr (const char *p)
                 const size_t name_len = strlen (attrs[i].name);
                 if ((size_t)(p - s) == name_len && strneq (s, attrs[i].name, name_len))
                   {
-                    write_attr (&attrs[i], &attr_types);
+                    write_attr (&attrs[i], &attr_types, is_opt);
                     valid_attr = true;
                     break;
                   }
@@ -516,7 +600,7 @@ process_opt_attr (const char *p)
                 STACK_VAR (attr_invalid);
                 strncpy (attr_invalid, s, p - s);
                 attr_invalid[p - s] = '\0';
-                vfprintf_fail ("--attr switch attribute '%s' is not valid", attr_invalid);
+                vfprintf_fail ("%s attribute '%s' is not valid", desc_type[DESC_TYPE], attr_invalid);
                 RELEASE_VAR (attr_invalid); /* never reached */
               }
           }
@@ -526,16 +610,182 @@ process_opt_attr (const char *p)
 }
 
 static void
-write_attr (const struct attr *attr_i, unsigned int *attr_types)
+write_attr (const struct attr *attr_i, unsigned int *attr_types, const bool is_opt)
 {
     const unsigned int val = attr_i->val;
     const enum attr_type attr_type = attr_i->type;
     const char *attr_name = attr_i->name;
 
     if (*attr_types & attr_type)
-      vfprintf_fail ("--attr switch has attribute '%s' twice or more", attr_name);
+      vfprintf_fail ("%s has attribute '%s' twice or more",
+                     is_opt ? "--attr switch" : "attr conf option", attr_name);
     snprintf (attr + strlen (attr), 3, "%u;", val);
     *attr_types |= attr_type;
+}
+
+static void
+process_opt_exclude_random (const char *s, const bool is_opt)
+{
+    bool valid = false;
+    unsigned int i;
+    if (exclude)
+      RELEASE_VAR (exclude);
+    exclude = xstrdup (s);
+    STACK_VAR (exclude);
+    for (i = 1; i < tables[GENERIC].count - 1; i++) /* skip color none and default */
+      {
+        const struct color *entry = &tables[GENERIC].entries[i];
+        if (streq (exclude, entry->name))
+          {
+            valid = true;
+            break;
+          }
+      }
+    if (!valid)
+      vfprintf_fail ("%s must be provided a plain color",
+                     is_opt ? "--exlude-random switch" : "exclude-random conf option");
+}
+
+static void
+init_opts_vars (void)
+{
+    if (opts_set & OPT_ATTR_SET)
+      {
+        attr[0] = '\0'; /* Clear attr string to discard values from the config file.  */
+        process_opt_attr (opts_arg.attr, true);
+      }
+    if (opts_set & OPT_EXCLUDE_RANDOM_SET)
+      process_opt_exclude_random (opts_arg.exclude_random, true);
+    if (opts_set & OPT_OMIT_COLOR_EMPTY_SET)
+      omit_color_empty = true;
+
+    free (opts_arg.attr);
+    free (opts_arg.exclude_random);
+}
+
+#define IS_SPACE(c) ((c) == ' ' || (c) == '\t')
+
+static void
+parse_conf (const char *conf_file, struct conf *config)
+{
+    unsigned int cnt = 0;
+    char line[256 + 1];
+    FILE *conf;
+
+    conf = open_file (conf_file, "r");
+
+    while (fgets (line, sizeof (line), conf))
+      {
+        char *cfg, *val;
+        char *assign, *comment, *opt, *value;
+        char *p;
+
+        cnt++;
+        if (strlen (line) > (sizeof (line) - 2))
+          vfprintf_fail ("%s: line %u exceeds maximum of %u characters", conf_file, cnt, (unsigned int)(sizeof (line) - 2));
+        if ((p = strrchr (line, '\n')))
+          *p = '\0';
+/* NAME PARSING (start) */
+        p = line;
+        /* skip leading spaces and tabs for name */
+        while (IS_SPACE (*p))
+          p++;
+        /* skip line if a) string end, b) comment, [cd]) newline */
+        if (*p == '\0' || *p == '#' || *p == '\n' || *p == '\r')
+          continue;
+        opt = p;
+        if (!(assign = strchr (opt, '='))) /* check for = */
+          {
+            char *space;
+            if ((space = strchr (opt, ' ')))
+              *space = '\0';
+            vfprintf_fail (formats[FMT_CONF], conf_file, opt, "not followed by =");
+          }
+        p = assign;
+        /* skip trailing spaces and tabs for name */
+        while (IS_SPACE (*(p - 1)))
+          p--;
+        *p = '\0';
+/* NAME PARSING (end) */
+/* NAME VALIDATION (start) */
+        for (p = opt; *p; p++)
+          if (!isalnum (*p) && *p != '-')
+            vfprintf_fail (formats[FMT_CONF], conf_file, opt, "cannot be made of non-option characters");
+/* NAME VALIDATION (end) */
+/* VALUE PARSING (start) */
+        p = assign + 1;
+        /* skip leading spaces and tabs for value */
+        while (IS_SPACE (*p))
+          p++;
+        /* skip line if comment */
+        if (*p == '#')
+          continue;
+        value = p;
+        if ((comment = strchr (p, '#')))
+          p = comment;
+        else
+          p += strlen (p);
+        /* skip trailing spaces and tabs for value */
+        while (IS_SPACE (*(p - 1)))
+          p--;
+        *p = '\0';
+/* VALUE PARSING (end) */
+
+        /* save option name */
+        cfg = xstrdup (opt);
+        /* save option value (allow empty ones) */
+        val = strlen (value) ? xstrdup (value) : NULL;
+
+        assign_conf (conf_file, config, cfg, val);
+        free (cfg);
+      }
+
+    fclose (conf);
+}
+
+static void
+assign_conf (const char *conf_file, struct conf *config, const char *cfg, char *val)
+{
+    if (streq (cfg, "attr"))
+      {
+        free (config->attr);
+        config->attr = val;
+      }
+    else if (streq (cfg, "color"))
+      {
+        free (config->color);
+        config->color = val;
+      }
+    else if (streq (cfg, "exclude-random"))
+      {
+        free (config->exclude_random);
+        config->exclude_random = val;
+      }
+    else if (streq (cfg, "omit-color-empty"))
+      {
+        free (config->omit_color_empty);
+        config->omit_color_empty = val;
+      }
+    else
+      vfprintf_fail (formats[FMT_CONF], conf_file, cfg, "not recognized");
+}
+
+static void
+init_conf_vars (const struct conf *config)
+{
+    if (config->attr)
+      process_opt_attr (config->attr, false);
+    if (config->exclude_random)
+      process_opt_exclude_random (config->exclude_random, false);
+    if (config->omit_color_empty)
+      {
+        if (streq (config->omit_color_empty, "yes"))
+          omit_color_empty = true;
+        else if (streq (config->omit_color_empty, "no"))
+          omit_color_empty = false;
+        else
+          vfprintf_fail ("omit-color-empty conf option is not valid");
+      }
 }
 
 static void
@@ -554,6 +804,7 @@ print_help (void)
     };
     const struct opt_data opts_data[] = {
         { "attr",           NULL, "=ATTR1,ATTR2,..." },
+        { "config",         "c",  "=PATH"            },
         { "exclude-random", NULL, "=COLOR"           },
         { "help",           "h",  NULL               },
         { "version",        "V",  NULL               },
@@ -593,9 +844,12 @@ print_help (void)
         if (opt_data)
           {
             if (opt_data->short_opt)
-              printf ("\t\t-%s, --%s\n", opt_data->short_opt, opt->name);
+              printf ("\t\t-%s, --%s", opt_data->short_opt, opt->name);
             else
-              printf ("\t\t    --%s%s\n", opt->name, opt_data->arg);
+              printf ("\t\t    --%s", opt->name);
+            if (opt_data->arg)
+              printf ("%s", opt_data->arg);
+            printf ("\n");
           }
         else
           printf ("\t\t    --%s\n", opt->name);
@@ -689,8 +943,18 @@ free_color_names (struct color_name **color_names)
 }
 
 static void
-process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct color **colors, const char **file, FILE **stream)
+free_conf (struct conf *config)
 {
+    free (config->attr);
+    free (config->color);
+    free (config->exclude_random);
+    free (config->omit_color_empty);
+}
+
+static void
+process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct color **colors, const char **file, FILE **stream, struct conf *config)
+{
+    bool use_conf_color;
     int ret;
     char *p;
     struct stat sb;
@@ -713,12 +977,19 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
           vfprintf_fail (formats[FMT_GENERIC], "hyphen must be preceded by color string");
       }
 
-    ret = lstat (color_string, &sb);
+    if ((ret = lstat (color_string, &sb)) == 0) /* exists */
+      /* Ensure that we don't fail if there's a file with one or more
+         color names in its path.  */
+      use_conf_color = skip_path_colors (color_string, file_string, &sb, !!config->color);
 
-    /* Ensure that we don't fail if there's a file with one or more
-       color names in its path.  */
-    if (ret == 0) /* success */
-      skip_path_colors (color_string, file_string, &sb);
+    /* Use color from config file.  */
+    if (arg_cnt == 1
+     && (access (color_string, F_OK) != -1)
+     && use_conf_color)
+      {
+        file_string = color_string;
+        color_string = config->color;
+      }
 
     if ((p = strchr (color_string, COLOR_SEP_CHAR)))
       {
@@ -799,8 +1070,8 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
     assert (*file != NULL);
 }
 
-static void
-skip_path_colors (const char *color_string, const char *file_string, const struct stat *sb)
+static bool
+skip_path_colors (const char *color_string, const char *file_string, const struct stat *sb, const bool has_conf)
 {
     bool have_file;
     unsigned int c;
@@ -842,11 +1113,16 @@ skip_path_colors (const char *color_string, const char *file_string, const struc
         else
           {
             if (VALID_FILE_TYPE (mode))
-              vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "must be preceded by color string");
+              {
+                if (has_conf)
+                  return true;
+                vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "must be preceded by color string");
+              }
             else
               vfprintf_fail (formats[FMT_QUOTE], get_file_type (mode), file_existing, "is not a valid file type");
           }
       }
+    return false;
 }
 
 static void
@@ -1451,6 +1727,20 @@ str_concat_wrap (const char *str1, const char *str2, const char *file, unsigned 
     *p = '\0';
 
     return str;
+}
+
+static char *
+expand_string (const char *str)
+{
+    char *s = NULL;
+    wordexp_t p;
+
+    wordexp (str, &p, 0);
+    if (p.we_wordc >= 1)
+      s = xstrdup (p.we_wordv[0]);
+    wordfree (&p);
+
+    return s;
 }
 
 static bool

@@ -103,7 +103,7 @@ my $compile = sub
     my ($buf_size) = @_;
     return true if exists $programs{$buf_size};
     my $program = tmpnam();
-    return false unless system("$compiler -DTEST_MERGE_PART_LINE -DBUF_SIZE=$buf_size -o $program $source") == 0;
+    return false unless system("$compiler -DTEST -DTEST_MERGE_PART_LINE -DBUF_SIZE=$buf_size -o $program $source") == 0;
     $programs{$buf_size} = $program;
     return true; # compiling succeeded
 };
@@ -147,7 +147,7 @@ foreach my $test (@pushback) {
     my $buf_size = $test->[1];
     SKIP: {
         my $program = tmpnam();
-        skip $compiling_failed_msg, 1 unless system("$compiler -DBUF_SIZE=$buf_size -o $program $source") == 0;
+        skip $compiling_failed_msg, 1 unless system("$compiler -DTEST -DBUF_SIZE=$buf_size -o $program $source") == 0;
         ok(qx(printf %s "$test->[0]" | $program --clean) eq $test->[0], 'pushback: ' . $test_name->($test->[0], $buf_size));
         unlink $program;
     }
