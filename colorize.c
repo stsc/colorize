@@ -681,9 +681,11 @@ parse_conf (const char *conf_file, struct conf *config)
         char *p;
 
         cnt++;
+        if ((p = strchr (line, '\r')) && *(p + 1) != '\n')
+          vfprintf_fail ("%s: CR ending of line %u is not supported, switch to CRLF/LF instead", conf_file, cnt);
         if (strlen (line) > (sizeof (line) - 2))
           vfprintf_fail ("%s: line %u exceeds maximum of %u characters", conf_file, cnt, (unsigned int)(sizeof (line) - 2));
-        if ((p = strrchr (line, '\n')))
+        if ((p = strpbrk (line, "\n\r")))
           *p = '\0';
 /* NAME PARSING (start) */
         p = line;
@@ -696,9 +698,9 @@ parse_conf (const char *conf_file, struct conf *config)
         opt = p;
         if (!(assign = strchr (opt, '='))) /* check for = */
           {
-            char *space;
-            if ((space = strchr (opt, ' ')))
-              *space = '\0';
+            char *s;
+            if ((s = strpbrk (opt, "# ")))
+              *s = '\0';
             vfprintf_fail (formats[FMT_CONF], conf_file, opt, "not followed by =");
           }
         p = assign;
