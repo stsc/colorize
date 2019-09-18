@@ -1170,6 +1170,7 @@ gather_color_names (const char *color_string, char *attr, struct color_name **co
                   break;
                 case BACKGROUND:
                   vfprintf_fail (formats[FMT_COLOR], tables[BACKGROUND].desc, color, "cannot be bold");
+                  break;
                 default: /* never reached */
                   ABORT_TRACE ();
               }
