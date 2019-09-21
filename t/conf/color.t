@@ -8,7 +8,7 @@ use Colorize::Common qw(:defaults $write_to_tmpfile);
 use File::Temp qw(tmpnam);
 use Test::More;
 
-my $tests = 3;
+my $tests = 4;
 
 plan tests => $tests;
 
@@ -24,7 +24,8 @@ SKIP: {
     print {$fh} "color=green\n";
     close($fh);
 
-    is(qx($program $infile), "\e[32mfoo\e[0m", 'color from config');
+    is(qx(printf %s "foo" | $program -), "\e[32mfoo\e[0m", 'color from config (stdin)');
+    is(qx($program $infile), "\e[32mfoo\e[0m", 'color from config (file)');
     is(qx(printf %s "foo" | $program none/none), 'foo', 'read from stdin');
     is(qx($program none/none $infile), 'foo', 'read from file');
 

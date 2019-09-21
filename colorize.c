@@ -956,7 +956,7 @@ free_conf (struct conf *config)
 static void
 process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct color **colors, const char **file, FILE **stream, struct conf *config)
 {
-    bool use_conf_color;
+    bool has_hyphen, use_conf_color;
     int ret;
     char *p;
     struct stat sb;
@@ -971,23 +971,27 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
 
     assert (color_string != NULL);
 
-    if (streq (color_string, "-"))
+    has_hyphen = streq (color_string, "-");
+
+    if (has_hyphen)
       {
         if (file_string)
           vfprintf_fail (formats[FMT_GENERIC], "hyphen cannot be used as color string");
-        else
+        else if (!config->color)
           vfprintf_fail (formats[FMT_GENERIC], "hyphen must be preceded by color string");
       }
 
-    if ((ret = lstat (color_string, &sb)) == 0) /* exists */
+    if (!has_hyphen && (ret = lstat (color_string, &sb)) == 0) /* exists */
       /* Ensure that we don't fail if there's a file with one or more
          color names in its path.  */
       use_conf_color = skip_path_colors (color_string, file_string, &sb, !!config->color);
+    else if (has_hyphen)
+      use_conf_color = true;
+    else
+      use_conf_color = false;
 
     /* Use color from config file.  */
-    if (arg_cnt == 1
-     && (access (color_string, F_OK) != -1)
-     && use_conf_color)
+    if (arg_cnt == 1 && use_conf_color)
       {
         file_string = color_string;
         color_string = config->color;
