@@ -643,7 +643,7 @@ process_opt_exclude_random (const char *s, const bool is_opt)
       }
     if (!valid)
       vfprintf_fail ("%s must be provided a plain color",
-                     is_opt ? "--exlude-random switch" : "exclude-random conf option");
+                     is_opt ? "--exclude-random switch" : "exclude-random conf option");
 }
 
 static void
