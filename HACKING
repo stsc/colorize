@@ -7,3 +7,17 @@ The colorize sources ought to be made available as a Git repository,
 otherwise no detailed git version hash may be included in the version
 output of colorize.  Even versions of older commits will no longer be
 accessible.  See version.pl for some in depth code.
+
+Debian-Release instruction hints
+--------------------------------
+$ tar cvvzf ../colorize_0.vv.orig.tar.gz --exclude=debian --exclude-vcs .
+$ dpkg-buildpackage -uc -us 2>&1 | tee ../dpkg-buildpackage.log
+$ lintian
+$ lintian --pedantic
+$ duck
+$ hardening-check ./debian/colorize/usr/bin/colorize
+$ blhc ../dpkg-buildpackage.log
+$ bls-standalone check ../dpkg-buildpackage.log
+$ adequate colorize
+/usr/share/doc/debian-policy/upgrading-checklist.txt.gz
+https://people.debian.org/~abe/sponsoring/
