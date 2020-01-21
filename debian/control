@@ -2,7 +2,7 @@ Source: colorize
 Section: utils
 Priority: optional
 Maintainer: Steven Schubiger <stsc@refcnt.org>
-Build-Depends: debhelper (>= 9)
+Build-Depends: debhelper-compat (= 12)
 Standards-Version: 4.1.4
 Rules-Requires-Root: no
 Homepage: http://cgit.refcnt.org/colorize.git/tree/README
