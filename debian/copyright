@@ -3,11 +3,11 @@ Upstream-Name: colorize
 Source: http://cgit.refcnt.org/colorize.git/
 
 Files: *
-Copyright: 2011-2018 Steven Schubiger <stsc@refcnt.org>
+Copyright: 2011-2020 Steven Schubiger <stsc@refcnt.org>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2016-2018 Steven Schubiger <stsc@refcnt.org>
+Copyright: 2016-2020 Steven Schubiger <stsc@refcnt.org>
 License: GPL-3.0+
 
 License: GPL-3.0+
