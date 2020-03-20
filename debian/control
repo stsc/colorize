@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Steven Schubiger <stsc@refcnt.org>
 Build-Depends: debhelper-compat (= 12)
-Standards-Version: 4.1.4
+Standards-Version: 4.5.0
 Rules-Requires-Root: no
 Homepage: http://cgit.refcnt.org/colorize.git/tree/README
 Vcs-Git: git://refcnt.org/colorize.git

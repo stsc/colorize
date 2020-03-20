@@ -1,11 +1,13 @@
 colorize (0.64-2) UNRELEASED; urgency=medium
 
+  * Declare compliance with Debian Policy 4.5.0.
+    (No changes needed.)
   * debian/copyright: amend years.
   * debian/control: use v12 mode of debhelper-compat package.
   * debian/control: declare "Rules-Requires-Root: no".
   * debian/copyright: update link to HTTPS, reported by duck(1).
 
- -- Steven Schubiger <stsc@refcnt.org>  Thu, 19 Mar 2020 19:25:07 +0100
+ -- Steven Schubiger <stsc@refcnt.org>  Fri, 20 Mar 2020 21:36:43 +0100
 
 colorize (0.64-1) unstable; urgency=low
 
