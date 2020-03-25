@@ -745,29 +745,22 @@ parse_conf (const char *conf_file, struct conf *config)
     fclose (conf);
 }
 
+#define ASSIGN_CONF(str,val) do { \
+    free (str);                   \
+    str = val;                    \
+} while (false)
+
 static void
 assign_conf (const char *conf_file, struct conf *config, const char *cfg, char *val)
 {
     if (streq (cfg, "attr"))
-      {
-        free (config->attr);
-        config->attr = val;
-      }
+      ASSIGN_CONF (config->attr, val);
     else if (streq (cfg, "color"))
-      {
-        free (config->color);
-        config->color = val;
-      }
+      ASSIGN_CONF (config->color, val);
     else if (streq (cfg, "exclude-random"))
-      {
-        free (config->exclude_random);
-        config->exclude_random = val;
-      }
+      ASSIGN_CONF (config->exclude_random, val);
     else if (streq (cfg, "omit-color-empty"))
-      {
-        free (config->omit_color_empty);
-        config->omit_color_empty = val;
-      }
+      ASSIGN_CONF (config->omit_color_empty, val);
     else
       vfprintf_fail (formats[FMT_CONF], conf_file, cfg, "not recognized");
 }
