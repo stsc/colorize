@@ -779,7 +779,7 @@ init_conf_vars (const struct conf *config)
         else if (streq (config->omit_color_empty, "no"))
           omit_color_empty = false;
         else
-          vfprintf_fail ("omit-color-empty conf option is not valid");
+          vfprintf_fail (formats[FMT_GENERIC], "omit-color-empty conf option is not valid");
       }
 }
 
