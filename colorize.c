@@ -285,6 +285,7 @@ static const char *program_name;
 static void print_tstamp (FILE *);
 #endif
 static void process_opts (int, char **, char **);
+static void conf_file_path (char **);
 static void process_opt_attr (const char *, const bool);
 static void write_attr (const struct attr *, unsigned int *, const bool);
 static void process_opt_exclude_random (const char *, const bool);
@@ -379,25 +380,7 @@ main (int argc, char **argv)
     conf_file = to_str (CONF_FILE_TEST);
 #elif !defined(TEST)
     if (conf_file == NULL)
-      {
-        uid_t uid;
-        struct passwd *passwd;
-        size_t size;
-
-        uid = getuid ();
-        errno = 0;
-        if ((passwd = getpwuid (uid)) == NULL)
-          {
-            if (errno == 0)
-              vfprintf_diag ("password file entry for uid %lu not found", (unsigned long)uid);
-            else
-              perror ("getpwuid");
-            exit (EXIT_FAILURE);
-          }
-        size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
-        conf_file = xmalloc (size);
-        snprintf (conf_file, size, "%s/%s", passwd->pw_dir, CONF_FILE);
-      }
+      conf_file_path (&conf_file);
     else
       {
         char *s;
@@ -553,6 +536,31 @@ process_opts (int argc, char **argv, char **conf_file)
               ABORT_TRACE ();
           }
       }
+}
+
+static void
+conf_file_path (char **conf_file)
+{
+    char *path;
+    uid_t uid;
+    struct passwd *passwd;
+    size_t size;
+
+    uid = getuid ();
+    errno = 0;
+    if ((passwd = getpwuid (uid)) == NULL)
+      {
+        if (errno == 0)
+          vfprintf_diag ("password file entry for uid %lu not found", (unsigned long)uid);
+        else
+          perror ("getpwuid");
+        exit (EXIT_FAILURE);
+      }
+    size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
+    path = xmalloc (size);
+    snprintf (path, size, "%s/%s", passwd->pw_dir, CONF_FILE);
+
+    *conf_file = path;
 }
 
 static void
