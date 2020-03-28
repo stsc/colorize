@@ -628,8 +628,7 @@ process_opt_exclude_random (const char *s, const bool is_opt)
 {
     bool valid = false;
     unsigned int i;
-    if (exclude)
-      RELEASE_VAR (exclude);
+    RELEASE_VAR (exclude);
     exclude = xstrdup (s);
     STACK_VAR (exclude);
     for (i = 1; i < tables[GENERIC].count - 1; i++) /* skip color none and default */
