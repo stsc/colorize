@@ -218,7 +218,7 @@ static const struct {
 };
 
 static unsigned int opts_set;
-enum {
+enum opt_set {
     OPT_ATTR_SET = 0x01,
     OPT_EXCLUDE_RANDOM_SET = 0x02,
     OPT_OMIT_COLOR_EMPTY_SET = 0x04
@@ -420,6 +420,20 @@ main (int argc, char **argv)
             else if (clean_all)
               vfprintf_fail (format, "--clean-all", message);
           }
+        {
+          unsigned int i;
+          const struct option_set {
+              const char *option;
+              enum opt_set set;
+          } options[] = {
+              { "attr",             OPT_ATTR_SET             },
+              { "exclude-random",   OPT_EXCLUDE_RANDOM_SET   },
+              { "omit-color-empty", OPT_OMIT_COLOR_EMPTY_SET },
+          };
+          for (i = 0; i < COUNT_OF (options, struct option_set); i++)
+            if (opts_set & options[i].set)
+              vfprintf_diag ("--%s switch has no meaning with --clean%s", options[i].option, clean_all ? "-all" : "");
+        }
       }
     else
       {
