@@ -13,7 +13,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 30;
+my $tests = 32;
 
 my $valgrind_cmd = '';
 {
@@ -98,6 +98,14 @@ SKIP: {
         }
 
         ok(qx(printf %s "\e[\e[33m" | $valgrind_cmd$program $switch) eq "\e[", "$type with invalid sequence");
+
+        {
+            my $ok = true;
+            foreach my $option (qw(--attr=bold --exclude-random=black --omit-color-empty)) {
+                $ok &= qx($valgrind_cmd$program $option $switch $infile1 2>&1 >/dev/null) =~ /switch has no meaning with/;
+            }
+            ok($ok, "$type strict options");
+        }
     };
 
     $check_clean->($_) foreach qw(clean clean-all);
