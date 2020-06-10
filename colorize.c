@@ -412,14 +412,7 @@ main (int argc, char **argv)
         if (clean && clean_all)
           vfprintf_fail (formats[FMT_GENERIC], "--clean and --clean-all switch are mutually exclusive");
         if (arg_cnt > 1)
-          {
-            const char *const format = "%s %s";
-            const char *const message = "switch cannot be used with more than one file";
-            if (clean)
-              vfprintf_fail (format, "--clean", message);
-            else if (clean_all)
-              vfprintf_fail (format, "--clean-all", message);
-          }
+          vfprintf_fail ("--clean%s switch cannot be used with more than one file", clean_all ? "-all" : "");
         {
           unsigned int i;
           const struct option_set {
