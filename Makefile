@@ -30,3 +30,6 @@ clean:
 
 release:
 			sh ./release.sh
+
+readme:
+			perl ./readme.pl

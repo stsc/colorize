@@ -1,0 +1,90 @@
+<pre>
+colorize
+========
+
+Description
+-----------
+Colorize aims at being a small, independent and handy command-line
+text colorizing tool.  It emits ANSI escape sequences in order to
+color lines of text; also, sequences emitted by colorize or foreign
+programs may be cleared.
+
+The main code is written in C (c89 mostly), whereas the test script
+consists of Perl code.
+
+Colorize is known to build and test successfully on Linux and
+Net/Open/MirBSD.  Other platforms are untested, so be prepared for
+it to eventually not work as expected there.
+
+Requirements
+------------
+gcc
+make
+perl
+valgrind (optional)
+
+Build instructions
+------------------
+Issue `make' to build colorize.
+
+Once completed, run the tests with `make check'.
+
+Then you should most likely have a working binary.
+
+Next, install it with `make install' (may require elevated
+user permissions).
+
+Finally, clean up the working directory through `make clean'.
+
+Customizing instructions
+------------------------
+The default character ('/') which separates the foreground
+from the background color may be redefined:
+
+`make FLAGS=-DCOLOR_SEP_CHAR_COLON' -&gt; defines as ':'
+`make FLAGS=-DCOLOR_SEP_CHAR_SLASH' -&gt; defines as '/'
+
+Debugging instructions
+----------------------
+For the sake of completeness, colorize can be also built with
+debugging output by issuing `make FLAGS=-DDEBUG'.  The intention
+is to provide some memory allocation diagnostics (and might be
+extended in future).  Usually, a debugging build is not required.
+
+Furthermore, tests can be run through valgrind by issuing, for
+example, `make check_valgrind 2&gt;&1 | tee valgrind.out'.  The
+file provided here for the `tee' invocation will be populated
+with the captured output from both standard output and error
+stream.
+
+Configuration File
+------------------
+A user configuration file may be populated with options and
+according values.  See man page source file `colorize.1' for
+details.
+
+Documentation
+-------------
+See man page source file: colorize.1.
+
+Usage example
+-------------
+In ~/.bashrc:
+
+| ls_color() {
+|     ls "$@" | colorize green -
+| }
+| alias ls=ls_color
+
+This excerpt defines an alias which will set the color being
+printed for literal ls invocations to green.
+
+Afterword
+---------
+Let me know, if you have ideas, bug reports, patches, etc.
+
+Author
+------
+Steven Schubiger &lt;stsc@refcnt.org&gt;
+
+</pre>
