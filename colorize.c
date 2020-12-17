@@ -192,18 +192,20 @@ enum {
     FMT_ERROR,
     FMT_FILE,
     FMT_TYPE,
-    FMT_CONF
+    FMT_CONF,
+    FMT_CONF_FILE
 };
 static const char *formats[] = {
-    "%s",                     /* generic */
-    "%s '%s'",                /* string  */
-    "%s `%s' %s",             /* quote   */
-    "%s color '%s' %s",       /* color   */
-    "%s color '%s' %s '%s'",  /* random  */
-    "less than %lu bytes %s", /* error   */
-    "%s: %s",                 /* file    */
-    "%s: %s: %s",             /* type    */
-    "%s: option '%s' %s"      /* conf    */
+    "%s",                     /* generic   */
+    "%s '%s'",                /* string    */
+    "%s `%s' %s",             /* quote     */
+    "%s color '%s' %s",       /* color     */
+    "%s color '%s' %s '%s'",  /* random    */
+    "less than %lu bytes %s", /* error     */
+    "%s: %s",                 /* file      */
+    "%s: %s: %s",             /* type      */
+    "%s: option '%s' %s",     /* conf      */
+    "config file %s: %s"      /* conf file */
 };
 
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
@@ -391,7 +393,7 @@ main (int argc, char **argv)
           }
         errno = 0;
         if (access (conf_file, F_OK) == -1)
-          vfprintf_fail (formats[FMT_FILE], conf_file, strerror (errno));
+          vfprintf_fail (formats[FMT_CONF_FILE], conf_file, strerror (errno));
       }
 #endif
 #if defined(CONF_FILE_TEST) || !defined(TEST)
