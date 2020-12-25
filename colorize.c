@@ -382,7 +382,10 @@ main (int argc, char **argv)
     conf_file = to_str (CONF_FILE_TEST);
 #elif !defined(TEST)
     if (conf_file == NULL)
-      conf_file_path (&conf_file);
+      {
+        conf_file_path (&conf_file);
+        STACK_VAR (conf_file);
+      }
     else
       {
         char *s;
@@ -391,6 +394,7 @@ main (int argc, char **argv)
             free (conf_file);
             conf_file = s;
           }
+        STACK_VAR (conf_file);
         errno = 0;
         if (access (conf_file, F_OK) == -1)
           vfprintf_fail (formats[FMT_CONF_FILE], conf_file, strerror (errno));
@@ -401,7 +405,7 @@ main (int argc, char **argv)
       parse_conf (conf_file, &config);
 #endif
 #if !defined(CONF_FILE_TEST) && !defined(TEST)
-    free (conf_file);
+    RELEASE_VAR (conf_file);
 #endif
     init_conf_vars (&config);
 
@@ -508,6 +512,7 @@ process_opts (int argc, char **argv, char **conf_file)
                   case OPT_ATTR:
                     opts_set |= OPT_ATTR_SET;
                     opts_arg.attr = xstrdup (optarg);
+                    STACK_VAR (opts_arg.attr);
                     break;
                   case OPT_CLEAN:
                     clean = true;
@@ -520,6 +525,7 @@ process_opts (int argc, char **argv, char **conf_file)
                   case OPT_EXCLUDE_RANDOM:
                     opts_set |= OPT_EXCLUDE_RANDOM_SET;
                     opts_arg.exclude_random = xstrdup (optarg);
+                    STACK_VAR (opts_arg.exclude_random);
                     break;
                   case OPT_OMIT_COLOR_EMPTY:
                     opts_set |= OPT_OMIT_COLOR_EMPTY_SET;
@@ -675,8 +681,8 @@ init_opts_vars (void)
     if (opts_set & OPT_OMIT_COLOR_EMPTY_SET)
       omit_color_empty = true;
 
-    free (opts_arg.attr);
-    free (opts_arg.exclude_random);
+    RELEASE_VAR (opts_arg.attr);
+    RELEASE_VAR (opts_arg.exclude_random);
 }
 
 #define IS_SPACE(c) ((c) == ' ' || (c) == '\t')
@@ -751,18 +757,20 @@ parse_conf (const char *conf_file, struct conf *config)
 
         /* save option name */
         cfg = xstrdup (opt);
+        STACK_VAR (cfg);
         /* save option value (allow empty ones) */
         val = strlen (value) ? xstrdup (value) : NULL;
+        STACK_VAR (val);
 
         assign_conf (conf_file, config, cfg, val);
-        free (cfg);
+        RELEASE_VAR (cfg);
       }
 
     fclose (conf);
 }
 
 #define ASSIGN_CONF(str,val) do { \
-    free (str);                   \
+    RELEASE_VAR (str);            \
     str = val;                    \
 } while (false)
 
@@ -956,10 +964,10 @@ free_color_names (struct color_name **color_names)
 static void
 free_conf (struct conf *config)
 {
-    free (config->attr);
-    free (config->color);
-    free (config->exclude_random);
-    free (config->omit_color_empty);
+    RELEASE_VAR (config->attr);
+    RELEASE_VAR (config->color);
+    RELEASE_VAR (config->exclude_random);
+    RELEASE_VAR (config->omit_color_empty);
 }
 
 static void
