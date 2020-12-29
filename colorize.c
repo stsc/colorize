@@ -969,8 +969,9 @@ cleanup (void)
                   fclose (var->ptr);
                   break;
                 case IS_UNUSED:
-                default:
                   break;
+                default: /* never reached */
+                  ABORT_TRACE ();
               }
           }
         free_null (vars_list);
@@ -1936,8 +1937,8 @@ release (struct var_list *list, unsigned int stacked, void **ptr)
                 case IS_FILE:
                   fclose (*ptr);
                   break;
-                default:
-                  break;
+                default: /* never reached */
+                  ABORT_TRACE ();
               }
             *ptr = NULL;
             var->ptr  = NULL;
