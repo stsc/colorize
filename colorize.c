@@ -81,12 +81,14 @@
 
 #define VALID_FILE_TYPE(mode) (S_ISREG (mode) || S_ISLNK (mode) || S_ISFIFO (mode))
 
-#define STACK_VAR(ptr) do {                                   \
-    stack_var (&vars_list, &stacked_vars, stacked_vars, ptr); \
+#define STACK_VAR(ptr) do {                                           \
+    stack (&vars_list, &stacked_vars, stacked_vars, ptr, IS_GENERIC); \
 } while (false)
-
-#define RELEASE_VAR(ptr) do {                             \
-    release_var (vars_list, stacked_vars, (void **)&ptr); \
+#define STACK_FILE(ptr) do {                                       \
+    stack (&vars_list, &stacked_vars, stacked_vars, ptr, IS_FILE); \
+} while (false)
+#define RELEASE(ptr) do {                             \
+    release (vars_list, stacked_vars, (void **)&ptr); \
 } while (false)
 
 #if !DEBUG
@@ -266,13 +268,23 @@ struct attr {
     enum attr_type type;
 };
 
+enum var_type {
+    IS_GENERIC,
+    IS_FILE,
+    IS_UNUSED
+};
+struct var_list {
+    void *ptr;
+    enum var_type type;
+};
+
 static FILE *stream;
 #if DEBUG
 static FILE *log;
 #endif
 
 static unsigned int stacked_vars;
-static void **vars_list;
+static struct var_list *vars_list;
 
 static bool clean;
 static bool clean_all;
@@ -344,8 +356,8 @@ static bool has_color_name (const char *, const char *);
 static FILE *open_file (const char *, const char *);
 static void vfprintf_diag (const char *, ...);
 static void vfprintf_fail (const char *, ...);
-static void stack_var (void ***, unsigned int *, unsigned int, void *);
-static void release_var (void **, unsigned int, void **);
+static void stack (struct var_list **, unsigned int *, unsigned int, void *, enum var_type);
+static void release (struct var_list *, unsigned int, void **);
 
 extern int optind;
 
@@ -371,6 +383,7 @@ main (int argc, char **argv)
 
 #if DEBUG
     log = open_file (DEBUG_FILE, "w");
+    STACK_FILE (log);
     print_tstamp (log);
 #endif
 
@@ -405,7 +418,7 @@ main (int argc, char **argv)
       parse_conf (conf_file, &config);
 #endif
 #if !defined(CONF_FILE_TEST) && !defined(TEST)
-    RELEASE_VAR (conf_file);
+    RELEASE (conf_file);
 #endif
     init_conf_vars (&config);
 
@@ -452,7 +465,7 @@ main (int argc, char **argv)
 
     free_conf (&config);
 
-    RELEASE_VAR (exclude);
+    RELEASE (exclude);
 
     exit (EXIT_SUCCESS);
 }
@@ -624,7 +637,7 @@ process_opt_attr (const char *p, const bool is_opt)
                 strncpy (attr_invalid, s, p - s);
                 attr_invalid[p - s] = '\0';
                 vfprintf_fail ("%s attribute '%s' is not valid", desc_type[DESC_TYPE], attr_invalid);
-                RELEASE_VAR (attr_invalid); /* never reached */
+                RELEASE (attr_invalid); /* never reached */
               }
           }
         if (*p)
@@ -651,7 +664,7 @@ process_opt_exclude_random (const char *s, const bool is_opt)
 {
     bool valid = false;
     unsigned int i;
-    RELEASE_VAR (exclude);
+    RELEASE (exclude);
     exclude = xstrdup (s);
     STACK_VAR (exclude);
     for (i = 1; i < tables[GENERIC].count - 1; i++) /* skip color none and default */
@@ -681,8 +694,8 @@ init_opts_vars (void)
     if (opts_set & OPT_OMIT_COLOR_EMPTY_SET)
       omit_color_empty = true;
 
-    RELEASE_VAR (opts_arg.attr);
-    RELEASE_VAR (opts_arg.exclude_random);
+    RELEASE (opts_arg.attr);
+    RELEASE (opts_arg.exclude_random);
 }
 
 #define IS_SPACE(c) ((c) == ' ' || (c) == '\t')
@@ -695,6 +708,7 @@ parse_conf (const char *conf_file, struct conf *config)
     FILE *conf;
 
     conf = open_file (conf_file, "r");
+    STACK_FILE (conf);
 
     while (fgets (line, sizeof (line), conf))
       {
@@ -763,14 +777,14 @@ parse_conf (const char *conf_file, struct conf *config)
         STACK_VAR (val);
 
         assign_conf (conf_file, config, cfg, val);
-        RELEASE_VAR (cfg);
+        RELEASE (cfg);
       }
 
-    fclose (conf);
+    RELEASE (conf);
 }
 
 #define ASSIGN_CONF(str,val) do { \
-    RELEASE_VAR (str);            \
+    RELEASE (str);                \
     str = val;                    \
 } while (false)
 
@@ -934,17 +948,31 @@ static void
 cleanup (void)
 {
     if (stream && fileno (stream) != STDIN_FILENO)
-      fclose (stream);
+      RELEASE (stream);
 #if DEBUG
     if (log)
-      fclose (log);
+      RELEASE (log);
 #endif
 
     if (vars_list)
       {
         unsigned int i;
         for (i = 0; i < stacked_vars; i++)
-          free (vars_list[i]);
+          {
+            struct var_list *var = &vars_list[i];
+            switch (var->type)
+              {
+                case IS_GENERIC:
+                  free (var->ptr);
+                  break;
+                case IS_FILE:
+                  fclose (var->ptr);
+                  break;
+                case IS_UNUSED:
+                default:
+                  break;
+              }
+          }
         free_null (vars_list);
       }
 }
@@ -955,19 +983,19 @@ free_color_names (struct color_name **color_names)
     unsigned int i;
     for (i = 0; color_names[i]; i++)
       {
-        RELEASE_VAR (color_names[i]->name);
-        RELEASE_VAR (color_names[i]->orig);
-        RELEASE_VAR (color_names[i]);
+        RELEASE (color_names[i]->name);
+        RELEASE (color_names[i]->orig);
+        RELEASE (color_names[i]);
       }
 }
 
 static void
 free_conf (struct conf *config)
 {
-    RELEASE_VAR (config->attr);
-    RELEASE_VAR (config->color);
-    RELEASE_VAR (config->exclude_random);
-    RELEASE_VAR (config->omit_color_empty);
+    RELEASE (config->attr);
+    RELEASE (config->color);
+    RELEASE (config->exclude_random);
+    RELEASE (config->omit_color_empty);
 }
 
 static void
@@ -1080,6 +1108,7 @@ process_file_arg (const char *file_string, const char **file, FILE **stream)
               vfprintf_fail (formats[FMT_TYPE], file, "unrecognized type", get_file_type (sb.st_mode));
 
             *stream = open_file (file, "r");
+            STACK_FILE (*stream);
           }
         *file = file_string;
       }
@@ -1210,7 +1239,7 @@ gather_color_names (const char *color_string, char *attr, struct color_name **co
         STACK_VAR (color_names[index]->name);
       }
 
-    RELEASE_VAR (str);
+    RELEASE (str);
 }
 
 static void
@@ -1858,41 +1887,62 @@ vfprintf_fail (const char *fmt, ...)
 }
 
 static void
-stack_var (void ***list, unsigned int *stacked, unsigned int index, void *ptr)
+stack (struct var_list **list, unsigned int *stacked, unsigned int index, void *ptr, enum var_type type)
 {
+    struct var_list *var;
     /* nothing to stack */
     if (ptr == NULL)
       return;
     if (!*list)
-      *list = xmalloc (sizeof (void *));
+      *list = xmalloc (sizeof (struct var_list));
     else
       {
         unsigned int i;
         for (i = 0; i < *stacked; i++)
-          if (!(*list)[i])
-            {
-              (*list)[i] = ptr;
-              return; /* reused */
-            }
-        *list = xrealloc (*list, (*stacked + 1) * sizeof (void *));
+          {
+            var = &(*list)[i];
+            if (var->type == IS_UNUSED)
+              {
+                var->ptr  = ptr;
+                var->type = type;
+                return; /* reused */
+              }
+          }
+        *list = xrealloc (*list, (*stacked + 1) * sizeof (struct var_list));
       }
-    (*list)[index] = ptr;
+    var = &(*list)[index];
+    var->ptr  = ptr;
+    var->type = type;
     (*stacked)++;
 }
 
 static void
-release_var (void **list, unsigned int stacked, void **ptr)
+release (struct var_list *list, unsigned int stacked, void **ptr)
 {
     unsigned int i;
     /* nothing to release */
     if (*ptr == NULL)
       return;
     for (i = 0; i < stacked; i++)
-      if (list[i] == *ptr)
-        {
-          free (*ptr);
-          *ptr = NULL;
-          list[i] = NULL;
-          return;
+      {
+        struct var_list *var = &list[i];
+        if (var->ptr == *ptr)
+          {
+            switch (var->type)
+              {
+                case IS_GENERIC:
+                  free (*ptr);
+                  break;
+                case IS_FILE:
+                  fclose (*ptr);
+                  break;
+                default:
+                  break;
+             }
+            *ptr = NULL;
+            var->ptr  = NULL;
+            var->type = IS_UNUSED;
+            return;
         }
+    }
 }
