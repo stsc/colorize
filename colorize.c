@@ -1938,7 +1938,7 @@ release (struct var_list *list, unsigned int stacked, void **ptr)
                   break;
                 default:
                   break;
-             }
+              }
             *ptr = NULL;
             var->ptr  = NULL;
             var->type = IS_UNUSED;
