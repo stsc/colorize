@@ -383,8 +383,12 @@ main (int argc, char **argv)
 
 #if DEBUG
     log = open_file (DEBUG_FILE, "w");
-    STACK_FILE (log);
     print_tstamp (log);
+    /* We're in debugging mode, hence we can't invoke STACK_FILE()
+       prior to print_tstamp(), because both cause text to be written
+       to the same logfile which is expected to have the timestamp
+       first.  */
+    STACK_FILE (log);
 #endif
 
     attr[0] = '\0';
