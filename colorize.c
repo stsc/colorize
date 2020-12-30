@@ -1927,7 +1927,8 @@ release (struct var_list *list, unsigned int stacked, void **ptr)
     for (i = 0; i < stacked; i++)
       {
         struct var_list *var = &list[i];
-        if (var->ptr == *ptr)
+        if (var->type != IS_UNUSED
+         && var->ptr == *ptr)
           {
             switch (var->type)
               {
