@@ -1,4 +1,4 @@
-.PHONY: check check_valgrind install clean release
+.PHONY: check check_valgrind install clean release readme
 
 .SUFFIXES:
 .SUFFIXES: .c .o
