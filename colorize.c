@@ -455,7 +455,7 @@ main (int argc, char **argv)
       {
         if (arg_cnt == 0 || arg_cnt > 2)
           {
-            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or clean option", arg_cnt);
+            vfprintf_diag ("%u arguments provided, expected 1-2 arguments or --clean[-all]", arg_cnt);
             print_hint ();
             exit (EXIT_FAILURE);
           }
