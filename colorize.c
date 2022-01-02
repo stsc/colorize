@@ -858,7 +858,7 @@ print_help (void)
         const char *code = entry->code;
         if (code)
           printf ("\t\t{\033[%s#\033[0m} [%c%c]%s%*s%s\n",
-                   code, toupper (*name), *name, name + 1, 10 - (int)strlen (name), " ", name);
+                   code, toupper ((unsigned char)*name), *name, name + 1, 10 - (int)strlen (name), " ", name);
         else
           printf ("\t\t{-} %s%*s%s\n", name, 13 - (int)strlen (name), " ", name);
       }
@@ -1238,7 +1238,7 @@ gather_color_names (const char *color_string, char *attr, struct color_name **co
         STACK_VAR (color_names[index]->orig);
 
         for (ch = color; *ch; ch++)
-          *ch = tolower (*ch);
+          *ch = tolower ((unsigned char)*ch);
 
         color_names[index]->name = xstrdup (color);
         STACK_VAR (color_names[index]->name);
@@ -1848,7 +1848,7 @@ has_color_name (const char *str, const char *name)
     assert (strlen (str) > 0);
     assert (strlen (name) > 0);
 
-    if (!(*str == *name || *str == toupper (*name)))
+    if (!(*str == *name || *str == toupper ((unsigned char)*name)))
       return false;
     else if (*(name + 1) != '\0'
      && !((p = strstr (str + 1, name + 1)) && p == str + 1))
