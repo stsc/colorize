@@ -613,10 +613,10 @@ process_opt_attr (const char *p, const bool is_opt)
     while (*p)
       {
         const char *s;
-        if (!isalnum (*p))
+        if (!isalnum ((unsigned char)*p))
           vfprintf_fail ("%s must be provided a string", desc_type[DESC_TYPE]);
         s = p;
-        while (isalnum (*p))
+        while (isalnum ((unsigned char)*p))
           p++;
         if (*p != '\0' && *p != ',')
           vfprintf_fail ("%s must have strings separated by ,", desc_type[DESC_TYPE]);
@@ -751,7 +751,7 @@ parse_conf (const char *conf_file, struct conf *config)
 /* NAME PARSING (end) */
 /* NAME VALIDATION (start) */
         for (p = opt; *p; p++)
-          if (!isalnum (*p) && *p != '-')
+          if (!isalnum ((unsigned char)*p) && *p != '-')
             vfprintf_fail (formats[FMT_CONF], conf_file, opt, "cannot be made of non-option characters");
 /* NAME VALIDATION (end) */
 /* VALUE PARSING (start) */
@@ -1206,17 +1206,17 @@ gather_color_names (const char *color_string, char *attr, struct color_name **co
         assert (p != NULL);
 
         for (ch = color; *ch; ch++)
-          if (!isalpha (*ch))
+          if (!isalpha ((unsigned char)*ch))
             vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be made of non-alphabetic characters");
 
         for (ch = color + 1; *ch; ch++)
-          if (!islower (*ch))
+          if (!islower ((unsigned char)*ch))
             vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be in mixed lower/upper case");
 
         if (streq (color, "None"))
           vfprintf_fail (formats[FMT_COLOR], tables[index].desc, color, "cannot be bold");
 
-        if (isupper (*color))
+        if (isupper ((unsigned char)*color))
           {
             switch (index)
               {
@@ -1604,10 +1604,10 @@ gather_esc_offsets (const char *p, const char **start, const char **end)
             do {
               check_values = false;
               iter++;
-              if (!isdigit (*p))
+              if (!isdigit ((unsigned char)*p))
                 break;
               digit = p;
-              while (isdigit (*p))
+              while (isdigit ((unsigned char)*p))
                 p++;
               if (p - digit > 2)
                 break;
@@ -1640,7 +1640,7 @@ gather_esc_offsets (const char *p, const char **start, const char **end)
 static bool
 validate_esc_clean_all (const char **p)
 {
-    while (isdigit (**p) || **p == ';')
+    while (isdigit ((unsigned char)**p) || **p == ';')
       (*p)++;
     return (**p == 'm');
 }
