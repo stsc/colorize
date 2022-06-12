@@ -588,6 +588,7 @@ conf_file_path (char **conf_file)
           perror ("getpwuid");
         exit (EXIT_FAILURE);
       }
+    /* getpwuid() leaks memory */
     size = strlen (passwd->pw_dir) + 1 + strlen (CONF_FILE) + 1;
     path = xmalloc (size);
     snprintf (path, size, "%s/%s", passwd->pw_dir, CONF_FILE);
