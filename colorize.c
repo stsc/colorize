@@ -359,8 +359,6 @@ static void vfprintf_fail (const char *, ...);
 static void stack (struct var_list **, unsigned int *, unsigned int, void *, enum var_type);
 static void release (struct var_list *, unsigned int, void **);
 
-extern int optind;
-
 int
 main (int argc, char **argv)
 {
@@ -512,8 +510,6 @@ print_tstamp (FILE *log)
 #define PRINT_VERSION_EXIT() \
     print_version ();        \
     exit (EXIT_SUCCESS);
-
-extern char *optarg;
 
 static void
 process_opts (int argc, char **argv, char **conf_file)
