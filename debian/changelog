@@ -1,8 +1,9 @@
 colorize (0.65-2) UNRELEASED; urgency=medium
 
+  * debian/control: use v13 mode of debhelper-compat package.
   * debian/control: update Homepage link.
 
- -- Steven Schubiger <stsc@refcnt.org>  Tue, 23 Jun 2020 14:09:26 +0200
+ -- Steven Schubiger <stsc@refcnt.org>  Sun, 09 Jun 2024 20:28:48 +0200
 
 colorize (0.65-1) unstable; urgency=low
 
