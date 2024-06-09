@@ -1,12 +1,13 @@
-colorize (0.65-2) UNRELEASED; urgency=medium
+colorize (0.66-1) unstable; urgency=low
 
+  * New upstream release.
   * Declare compliance with Debian Policy 4.7.0.
     (No changes needed.)
   * debian/copyright: amend years.
   * debian/control: use v13 mode of debhelper-compat package.
   * debian/control: update Homepage link.
 
- -- Steven Schubiger <stsc@refcnt.org>  Sun, 09 Jun 2024 21:08:26 +0200
+ -- Steven Schubiger <stsc@refcnt.org>  Sun, 09 Jun 2024 21:20:11 +0200
 
 colorize (0.65-1) unstable; urgency=low
 

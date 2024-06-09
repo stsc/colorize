@@ -2,7 +2,7 @@
  * colorize - Read text from standard input stream or file and print
  *            it colorized through use of ANSI escape sequences
  *
- * Copyright (c) 2011-2019 Steven Schubiger
+ * Copyright (c) 2011-2022 Steven Schubiger
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -132,7 +132,7 @@
 
 #define PROGRAM_NAME "colorize"
 
-#define VERSION "0.65"
+#define VERSION "0.66"
 
 typedef enum { false, true } bool;
 
