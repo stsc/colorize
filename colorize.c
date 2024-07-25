@@ -141,6 +141,7 @@ struct conf {
     char *color;
     char *exclude_random;
     char *omit_color_empty;
+    char *rainbow_fg;
 };
 
 enum { DESC_OPTION, DESC_CONF };
@@ -153,31 +154,34 @@ struct color_name {
 struct color {
     const char *name;
     const char *code;
+    unsigned int index;
 };
 
+static unsigned int rainbow_index;
+
 static const struct color fg_colors[] = {
-    { "none",     NULL },
-    { "black",   "30m" },
-    { "red",     "31m" },
-    { "green",   "32m" },
-    { "yellow",  "33m" },
-    { "blue",    "34m" },
-    { "magenta", "35m" },
-    { "cyan",    "36m" },
-    { "white",   "37m" },
-    { "default", "39m" },
+    { "none",     NULL, 0 },
+    { "black",   "30m", 1 },
+    { "red",     "31m", 2 },
+    { "green",   "32m", 3 },
+    { "yellow",  "33m", 4 },
+    { "blue",    "34m", 5 },
+    { "magenta", "35m", 6 },
+    { "cyan",    "36m", 7 },
+    { "white",   "37m", 8 },
+    { "default", "39m", 9 },
 };
 static const struct color bg_colors[] = {
-    { "none",     NULL },
-    { "black",   "40m" },
-    { "red",     "41m" },
-    { "green",   "42m" },
-    { "yellow",  "43m" },
-    { "blue",    "44m" },
-    { "magenta", "45m" },
-    { "cyan",    "46m" },
-    { "white",   "47m" },
-    { "default", "49m" },
+    { "none",     NULL, 0 },
+    { "black",   "40m", 1 },
+    { "red",     "41m", 2 },
+    { "green",   "42m", 3 },
+    { "yellow",  "43m", 4 },
+    { "blue",    "44m", 5 },
+    { "magenta", "45m", 6 },
+    { "cyan",    "46m", 7 },
+    { "white",   "47m", 8 },
+    { "default", "49m", 9 },
 };
 
 struct bytes_size {
@@ -195,7 +199,8 @@ enum {
     FMT_FILE,
     FMT_TYPE,
     FMT_CONF,
-    FMT_CONF_FILE
+    FMT_CONF_FILE,
+    FMT_RAINBOW
 };
 static const char *formats[] = {
     "%s",                     /* generic   */
@@ -207,7 +212,8 @@ static const char *formats[] = {
     "%s: %s",                 /* file      */
     "%s: %s: %s",             /* type      */
     "%s: option '%s' %s",     /* conf      */
-    "config file %s: %s"      /* conf file */
+    "config file %s: %s",     /* conf file */
+    "%s color '%s' %s"        /* rainbow   */
 };
 
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
@@ -225,7 +231,8 @@ static unsigned int opts_set;
 enum opt_set {
     OPT_ATTR_SET = 0x01,
     OPT_EXCLUDE_RANDOM_SET = 0x02,
-    OPT_OMIT_COLOR_EMPTY_SET = 0x04
+    OPT_OMIT_COLOR_EMPTY_SET = 0x04,
+    OPT_RAINBOW_FG_SET = 0x08
 };
 static struct {
     char *attr;
@@ -239,6 +246,7 @@ enum {
     OPT_CONFIG,
     OPT_EXCLUDE_RANDOM,
     OPT_OMIT_COLOR_EMPTY,
+    OPT_RAINBOW_FG,
     OPT_HELP,
     OPT_VERSION
 };
@@ -250,6 +258,7 @@ static const struct option long_opts[] = {
     { "config",           required_argument, &opt_type, OPT_CONFIG           },
     { "exclude-random",   required_argument, &opt_type, OPT_EXCLUDE_RANDOM   },
     { "omit-color-empty", no_argument,       &opt_type, OPT_OMIT_COLOR_EMPTY },
+    { "rainbow-fg",       no_argument,       &opt_type, OPT_RAINBOW_FG       },
     { "help",             no_argument,       &opt_type, OPT_HELP             },
     { "version",          no_argument,       &opt_type, OPT_VERSION          },
     {  NULL,              0,                 NULL,      0                    },
@@ -289,6 +298,7 @@ static struct var_list *vars_list;
 static bool clean;
 static bool clean_all;
 static bool omit_color_empty;
+static bool rainbow_fg;
 
 static char attr[MAX_ATTRIBUTE_CHARS + 1];
 static char *exclude;
@@ -325,6 +335,8 @@ static void save_char (char, char **, size_t *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (const char *, const struct color **, const char * const, unsigned int, bool);
+static unsigned int get_rainbow_index (const struct color **, unsigned int, unsigned int);
+static bool skipable_rainbow_index (const struct color **, unsigned int);
 static void print_clean (const char *);
 static bool is_esc (const char *);
 static const char *get_end_of_esc (const char *);
@@ -372,7 +384,7 @@ main (int argc, char **argv)
     const char *file = NULL;
 
     char *conf_file = NULL;
-    struct conf config = { NULL, NULL, NULL, NULL };
+    struct conf config = { NULL, NULL, NULL, NULL, NULL };
 
     program_name = argv[0];
     atexit (cleanup);
@@ -443,6 +455,7 @@ main (int argc, char **argv)
               { "attr",             OPT_ATTR_SET             },
               { "exclude-random",   OPT_EXCLUDE_RANDOM_SET   },
               { "omit-color-empty", OPT_OMIT_COLOR_EMPTY_SET },
+              { "rainbow-fg",       OPT_RAINBOW_FG_SET       },
           };
           for (i = 0; i < COUNT_OF (options, struct option_set); i++)
             if (opts_set & options[i].set)
@@ -542,6 +555,9 @@ process_opts (int argc, char **argv, char **conf_file)
                     break;
                   case OPT_OMIT_COLOR_EMPTY:
                     opts_set |= OPT_OMIT_COLOR_EMPTY_SET;
+                    break;
+                  case OPT_RAINBOW_FG:
+                    opts_set |= OPT_RAINBOW_FG_SET;
                     break;
                   case OPT_HELP:
                     PRINT_HELP_EXIT ();
@@ -694,6 +710,8 @@ init_opts_vars (void)
       process_opt_exclude_random (opts_arg.exclude_random, true);
     if (opts_set & OPT_OMIT_COLOR_EMPTY_SET)
       omit_color_empty = true;
+    if (opts_set & OPT_RAINBOW_FG_SET)
+      rainbow_fg = true;
 
     RELEASE (opts_arg.attr);
     RELEASE (opts_arg.exclude_random);
@@ -800,6 +818,8 @@ assign_conf (const char *conf_file, struct conf *config, const char *cfg, char *
       ASSIGN_CONF (config->exclude_random, val);
     else if (streq (cfg, "omit-color-empty"))
       ASSIGN_CONF (config->omit_color_empty, val);
+    else if (streq (cfg, "rainbow-fg"))
+      ASSIGN_CONF (config->rainbow_fg, val);
     else
       vfprintf_fail (formats[FMT_CONF], conf_file, cfg, "not recognized");
 }
@@ -819,6 +839,15 @@ init_conf_vars (const struct conf *config)
           omit_color_empty = false;
         else
           vfprintf_fail (formats[FMT_GENERIC], "omit-color-empty conf option is not valid");
+      }
+    if (config->rainbow_fg)
+      {
+        if (streq (config->rainbow_fg, "yes"))
+          rainbow_fg = true;
+        else if (streq (config->rainbow_fg, "no"))
+          rainbow_fg = false;
+        else
+          vfprintf_fail (formats[FMT_GENERIC], "rainbow-fg conf option is not valid");
       }
 }
 
@@ -998,6 +1027,7 @@ free_conf (struct conf *config)
     RELEASE (config->color);
     RELEASE (config->exclude_random);
     RELEASE (config->omit_color_empty);
+    RELEASE (config->rainbow_fg);
 }
 
 static void
@@ -1068,6 +1098,22 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
             const unsigned int color2 = color_sets[i][1];
             if (CHECK_COLORS_RANDOM (color1, color2))
               vfprintf_fail (formats[FMT_RANDOM], tables[color1].desc, color_names[color1]->orig, "cannot be combined with", color_names[color2]->orig);
+          }
+      }
+
+    /* --rainbow-fg */
+    if (rainbow_fg)
+      {
+        unsigned int i;
+        const unsigned int color_set[2] = { FOREGROUND, BACKGROUND };
+        for (i = 0; i < 2; i++)
+          {
+            const unsigned int color = color_set[i];
+            if (color_names[color] && (
+                streq (color_names[color]->name, "none")
+             || streq (color_names[color]->name, "default"))
+            )
+              vfprintf_fail (formats[FMT_RAINBOW], tables[color].desc, color_names[color]->orig, "cannot be used with --rainbow-fg");
           }
       }
 
@@ -1507,6 +1553,24 @@ print_line (const char *attr, const struct color **colors, const char *const lin
     /* skip for --omit-color-empty? */
     else if (emit_colors)
       {
+        /* --rainbow-fg */
+        if (rainbow_fg)
+          {
+            unsigned int index;
+            const unsigned int max_index = tables[FOREGROUND].count - 2; /* omit color default */
+
+            if (rainbow_index == 0)
+              rainbow_index = colors[FOREGROUND]->index; /* init */
+            else if (rainbow_index > max_index)
+              rainbow_index = 1; /* black */
+
+            index = get_rainbow_index (colors, rainbow_index, max_index);
+
+            colors[FOREGROUND] = (struct color *)&tables[FOREGROUND].entries[index];
+
+            rainbow_index = index + 1;
+          }
+
         /* Foreground color code is guaranteed to be set when background color code is present.  */
         if (colors[BACKGROUND] && colors[BACKGROUND]->code)
           printf ("\033[%s", colors[BACKGROUND]->code);
@@ -1519,6 +1583,31 @@ print_line (const char *attr, const struct color **colors, const char *const lin
       putchar ('\r');
     if (flags & LF)
       putchar ('\n');
+}
+
+static unsigned int
+get_rainbow_index (const struct color **colors, unsigned int index, unsigned int max)
+{
+    if (skipable_rainbow_index (colors, index))
+      {
+        if (index + 1 > max)
+          {
+            if (skipable_rainbow_index (colors, 1))
+              return 2;
+            else
+              return 1;
+          }
+        else
+          return index + 1;
+      }
+    else
+      return index;
+}
+
+static bool
+skipable_rainbow_index (const struct color **colors, unsigned int index)
+{
+    return (colors[BACKGROUND] && index == colors[BACKGROUND]->index);
 }
 
 static void

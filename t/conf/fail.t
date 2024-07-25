@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 7;
+my $tests = 8;
 
 my $run_program_fail = sub
 {
@@ -46,6 +46,7 @@ SKIP: {
         [ 'attr=bold,bold',          'attr conf option has attribute \'bold\' twice or more'     ],
         [ 'exclude-random=random',   'exclude-random conf option must be provided a plain color' ],
         [ 'omit-color-empty=unsure', 'omit-color-empty conf option is not valid'                 ],
+        [ 'rainbow-fg=unsure',       'rainbow-fg conf option is not valid'                       ],
     );
     foreach my $set (@set) {
         open(my $fh, '>', $conf_file) or die "Cannot open `$conf_file' for writing: $!\n";

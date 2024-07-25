@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 21;
+my $tests = 23;
 
 my $conf = <<'EOT';
 # comment
@@ -30,12 +30,14 @@ color=green
 color=green	
 exclude-random=black
 omit-color-empty=yes
+rainbow-fg=no
 attr=bold # comment
 attr=bold	# comment
 attr=
 color=
 exclude-random=
 omit-color-empty=
+rainbow-fg=
 EOT
 
 my $run_program_succeed = sub

@@ -14,14 +14,15 @@ my $conf = <<'EOT';
 attr=bold
 color=blue
 omit-color-empty=yes
+rainbow-fg=yes
 EOT
 
 my $expected = <<"EOT";
 \e[1;34mfoo\e[0m
 
-\e[1;34mbar\e[0m
+\e[1;35mbar\e[0m
 
-\e[1;34mbaz\e[0m
+\e[1;36mbaz\e[0m
 EOT
 
 plan tests => $tests;

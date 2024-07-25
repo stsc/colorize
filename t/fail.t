@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 25;
+my $tests = 29;
 
 my $run_program_fail = sub
 {
@@ -40,31 +40,35 @@ SKIP: {
     my $dir  = tempdir(CLEANUP => true);
 
     my @set = (
-        [ '--attr=:',                'must be provided a string'                   ],
-        [ '--attr=bold:underscore',  'must have strings separated by ,'            ],
-        [ '--attr=b0ld',             'attribute \'b0ld\' is not valid'             ],
-        [ '--attr=b0ld,underscore',  'attribute \'b0ld\' is not valid'             ], # handle comma
-        [ '--attr=bold,bold',        'has attribute \'bold\' twice or more'        ],
-        [ '--exclude-random=random', 'must be provided a plain color'              ],
-        [ '--clean --clean-all',     'mutually exclusive'                          ],
-        [ '--clean file1 file2',     'more than one file'                          ],
-        [ '--clean-all file1 file2', 'more than one file'                          ],
-        [ '- file',                  'hyphen cannot be used as color string'       ],
-        [ '-',                       'hyphen must be preceded by color string'     ],
-        [ "$file file",              'cannot be used as color string'              ],
-        [ "$file",                   'must be preceded by color string'            ],
-        [ "$dir",                    'is not a valid file type'                    ],
-        [ '/black',                  'foreground color missing'                    ],
-        [ 'white/',                  'background color missing'                    ],
-        [ 'white/black/yellow',      'one color pair allowed only'                 ],
-        [ 'y3llow',                  'cannot be made of non-alphabetic characters' ],
-        [ 'yEllow',                  'cannot be in mixed lower/upper case'         ],
-        [ 'None',                    'cannot be bold'                              ],
-        [ 'white/Black',             'cannot be bold'                              ],
-        [ 'random/none',             'cannot be combined with'                     ],
-        [ 'random/default',          'cannot be combined with'                     ],
-        [ 'none/random',             'cannot be combined with'                     ],
-        [ 'default/random',          'cannot be combined with'                     ],
+        [ '--attr=:',                   'must be provided a string'                   ],
+        [ '--attr=bold:underscore',     'must have strings separated by ,'            ],
+        [ '--attr=b0ld',                'attribute \'b0ld\' is not valid'             ],
+        [ '--attr=b0ld,underscore',     'attribute \'b0ld\' is not valid'             ], # handle comma
+        [ '--attr=bold,bold',           'has attribute \'bold\' twice or more'        ],
+        [ '--exclude-random=random',    'must be provided a plain color'              ],
+        [ '--clean --clean-all',        'mutually exclusive'                          ],
+        [ '--clean file1 file2',        'more than one file'                          ],
+        [ '--clean-all file1 file2',    'more than one file'                          ],
+        [ '- file',                     'hyphen cannot be used as color string'       ],
+        [ '-',                          'hyphen must be preceded by color string'     ],
+        [ "$file file",                 'cannot be used as color string'              ],
+        [ "$file",                      'must be preceded by color string'            ],
+        [ "$dir",                       'is not a valid file type'                    ],
+        [ '/black',                     'foreground color missing'                    ],
+        [ 'white/',                     'background color missing'                    ],
+        [ 'white/black/yellow',         'one color pair allowed only'                 ],
+        [ 'y3llow',                     'cannot be made of non-alphabetic characters' ],
+        [ 'yEllow',                     'cannot be in mixed lower/upper case'         ],
+        [ 'None',                       'cannot be bold'                              ],
+        [ 'white/Black',                'cannot be bold'                              ],
+        [ 'random/none',                'cannot be combined with'                     ],
+        [ 'random/default',             'cannot be combined with'                     ],
+        [ 'none/random',                'cannot be combined with'                     ],
+        [ 'default/random',             'cannot be combined with'                     ],
+        [ 'white/none --rainbow-fg',    'cannot be used with --rainbow-fg'            ],
+        [ 'white/default --rainbow-fg', 'cannot be used with --rainbow-fg'            ],
+        [ 'none/white --rainbow-fg',    'cannot be used with --rainbow-fg'            ],
+        [ 'default/white --rainbow-fg', 'cannot be used with --rainbow-fg'            ],
     );
     foreach my $set (@set) {
         ok($run_program_fail->($program, $set->[0], $set->[1]), $set->[1]);

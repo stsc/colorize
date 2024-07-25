@@ -13,7 +13,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 32;
+my $tests = 34;
 
 my $valgrind_cmd = '';
 {
@@ -101,7 +101,7 @@ SKIP: {
 
         {
             my $ok = true;
-            foreach my $option (qw(--attr=bold --exclude-random=black --omit-color-empty)) {
+            foreach my $option (qw(--attr=bold --exclude-random=black --omit-color-empty --rainbow-fg)) {
                 $ok &= qx($valgrind_cmd$program $option $switch $infile1 2>&1 >/dev/null) =~ /switch has no meaning with/;
             }
             ok($ok, "$type strict options");
@@ -158,6 +158,18 @@ SKIP: {
         is_deeply([split /\n/, qx($valgrind_cmd$program yellow --omit-color-empty $infile)],
                   [split /\n/, "\e[33mfoo\e[0m\n\n\e[33mbar\e[0m"],
                   'switch omit-color-empty');
+    }
+
+    {
+        my $infile = $write_to_tmpfile->("foo\nbar\nbaz");
+
+        is_deeply([split /\n/, qx($valgrind_cmd$program black/black --rainbow-fg $infile)],
+                  [split /\n/, "\e[40m\e[31mfoo\e[0m\n\e[40m\e[32mbar\e[0m\n\e[40m\e[33mbaz\e[0m"],
+                  'switch rainbow-fg (init)');
+
+        is_deeply([split /\n/, qx($valgrind_cmd$program white --rainbow-fg $infile)],
+                  [split /\n/, "\e[37mfoo\e[0m\n\e[30mbar\e[0m\n\e[31mbaz\e[0m"],
+                  'switch rainbow-fg (reset)');
     }
 
     SKIP: {

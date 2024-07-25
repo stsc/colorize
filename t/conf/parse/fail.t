@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 9;
+my $tests = 10;
 
 my $run_program_fail = sub
 {
@@ -46,6 +46,7 @@ SKIP: {
         [ 'color1=magenta',        'option \'color1\' not recognized'                          ],
         [ 'exclude-random1=black', 'option \'exclude-random1\' not recognized'                 ],
         [ 'omit-color-empty1=yes', 'option \'omit-color-empty1\' not recognized'               ],
+        [ 'rainbow-fg1=no',        'option \'rainbow-fg1\' not recognized'                     ],
         [ 'attr',                  'option \'attr\' not followed by ='                         ],
         [ 'attr#',                 'option \'attr\' not followed by ='                         ],
         [ 'attr bold',             'option \'attr\' not followed by ='                         ],

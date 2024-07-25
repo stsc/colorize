@@ -1,4 +1,4 @@
-.TH COLORIZE 1 "2019-09-01" "colorize v0.66" "User Commands"
+.TH COLORIZE 1 "2024-07-25" "colorize v0.66" "User Commands"
 .SH NAME
 colorize \- colorize text on terminal with ANSI escape sequences
 .SH SYNOPSIS
@@ -49,6 +49,9 @@ text color to be excluded when selecting a random foreground color
 .BR \-\-omit\-color\-empty
 omit printing color escape sequences for empty lines
 .TP
+.BR \-\-rainbow\-fg
+enable foreground color rainbow mode
+.TP
 .BR \-h ", " \-\-help
 show help screen and exit
 .TP
@@ -76,6 +79,7 @@ attr = bold,underscore
 color = magenta # favorite one
 exclude-random = black
 omit-color-empty = yes
+rainbow-fg = no
 .fi
 .RE
 .RE
@@ -88,6 +92,7 @@ attr             (values same as command-line option)
 color            (value  same as command-line colors)
 exclude-random   (value  same as command-line option)
 omit-color-empty (yes/no)
+rainbow-fg       (yes/no)
 .fi
 .RE
 .RE
