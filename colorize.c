@@ -200,6 +200,7 @@ enum {
     FMT_TYPE,
     FMT_CONF,
     FMT_CONF_FILE,
+    FMT_CONF_INIT,
     FMT_RAINBOW
 };
 static const char *formats[] = {
@@ -213,6 +214,7 @@ static const char *formats[] = {
     "%s: %s: %s",             /* type      */
     "%s: option '%s' %s",     /* conf      */
     "config file %s: %s",     /* conf file */
+    "%s %s",                  /* conf init */
     "%s color '%s' %s"        /* rainbow   */
 };
 
@@ -316,6 +318,7 @@ static void process_opt_exclude_random (const char *, const bool);
 static void parse_conf (const char *, struct conf *);
 static void assign_conf (const char *, struct conf *, const char *, char *);
 static void init_conf_vars (const struct conf *);
+static void init_conf_boolean (const char *, bool *, const char *);
 static void init_opts_vars (void);
 static void print_hint (void);
 static void print_help (void);
@@ -832,23 +835,20 @@ init_conf_vars (const struct conf *config)
     if (config->exclude_random)
       process_opt_exclude_random (config->exclude_random, false);
     if (config->omit_color_empty)
-      {
-        if (streq (config->omit_color_empty, "yes"))
-          omit_color_empty = true;
-        else if (streq (config->omit_color_empty, "no"))
-          omit_color_empty = false;
-        else
-          vfprintf_fail (formats[FMT_GENERIC], "omit-color-empty conf option is not valid");
-      }
+      init_conf_boolean (config->omit_color_empty, &omit_color_empty, "omit-color-empty");
     if (config->rainbow_fg)
-      {
-        if (streq (config->rainbow_fg, "yes"))
-          rainbow_fg = true;
-        else if (streq (config->rainbow_fg, "no"))
-          rainbow_fg = false;
-        else
-          vfprintf_fail (formats[FMT_GENERIC], "rainbow-fg conf option is not valid");
-      }
+      init_conf_boolean (config->rainbow_fg, &rainbow_fg, "rainbow-fg");
+}
+
+static void
+init_conf_boolean (const char *conf_var, bool *boolean_var, const char *name)
+{
+    if (streq (conf_var, "yes"))
+      *boolean_var = true;
+    else if (streq (conf_var, "no"))
+      *boolean_var = false;
+    else
+      vfprintf_fail (formats[FMT_CONF_INIT], name, "conf option is not valid");
 }
 
 static void
