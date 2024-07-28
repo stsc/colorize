@@ -12,9 +12,9 @@ my $tests = 21;
 
 my $conf = <<'EOT';
 attr=underscore
-color=yellow # tested also in color.t
+color=yellow/black # tested also in color.t
 omit-color-empty=yes
-rainbow-fg=yes
+rainbow-bg=yes
 EOT
 
 plan tests => $tests;
@@ -37,11 +37,11 @@ EOT
     close($fh);
 
     is(qx($program $infile1), <<"EOT", 'use config');
-\e[4;33mfoo\e[0m
+\e[40m\e[4;33mfoo\e[0m
 
-\e[4;34mbar\e[0m
+\e[41m\e[4;33mbar\e[0m
 
-\e[4;35mbaz\e[0m
+\e[42m\e[4;33mbaz\e[0m
 EOT
     my $infile2 = $write_to_tmpfile->('foo');
 

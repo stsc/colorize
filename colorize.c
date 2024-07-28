@@ -142,6 +142,7 @@ struct conf {
     char *exclude_random;
     char *omit_color_empty;
     char *rainbow_fg;
+    char *rainbow_bg;
 };
 
 enum { DESC_OPTION, DESC_CONF };
@@ -215,7 +216,7 @@ static const char *formats[] = {
     "%s: option '%s' %s",     /* conf      */
     "config file %s: %s",     /* conf file */
     "%s %s",                  /* conf init */
-    "%s color '%s' %s"        /* rainbow   */
+    "%s color '%s' %s %s"     /* rainbow   */
 };
 
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
@@ -234,7 +235,8 @@ enum opt_set {
     OPT_ATTR_SET = 0x01,
     OPT_EXCLUDE_RANDOM_SET = 0x02,
     OPT_OMIT_COLOR_EMPTY_SET = 0x04,
-    OPT_RAINBOW_FG_SET = 0x08
+    OPT_RAINBOW_FG_SET = 0x08,
+    OPT_RAINBOW_BG_SET = 0x10
 };
 static struct {
     char *attr;
@@ -249,6 +251,7 @@ enum {
     OPT_EXCLUDE_RANDOM,
     OPT_OMIT_COLOR_EMPTY,
     OPT_RAINBOW_FG,
+    OPT_RAINBOW_BG,
     OPT_HELP,
     OPT_VERSION
 };
@@ -261,6 +264,7 @@ static const struct option long_opts[] = {
     { "exclude-random",   required_argument, &opt_type, OPT_EXCLUDE_RANDOM   },
     { "omit-color-empty", no_argument,       &opt_type, OPT_OMIT_COLOR_EMPTY },
     { "rainbow-fg",       no_argument,       &opt_type, OPT_RAINBOW_FG       },
+    { "rainbow-bg",       no_argument,       &opt_type, OPT_RAINBOW_BG       },
     { "help",             no_argument,       &opt_type, OPT_HELP             },
     { "version",          no_argument,       &opt_type, OPT_VERSION          },
     {  NULL,              0,                 NULL,      0                    },
@@ -297,10 +301,16 @@ static FILE *log;
 static unsigned int stacked_vars;
 static struct var_list *vars_list;
 
+static struct {
+    bool fg;
+    bool bg;
+} rainbow_from_conf = { false, false };
+
 static bool clean;
 static bool clean_all;
 static bool omit_color_empty;
 static bool rainbow_fg;
+static bool rainbow_bg;
 
 static char attr[MAX_ATTRIBUTE_CHARS + 1];
 static char *exclude;
@@ -317,8 +327,8 @@ static void write_attr (const struct attr *, unsigned int *, const bool);
 static void process_opt_exclude_random (const char *, const bool);
 static void parse_conf (const char *, struct conf *);
 static void assign_conf (const char *, struct conf *, const char *, char *);
-static void init_conf_vars (const struct conf *);
-static void init_conf_boolean (const char *, bool *, const char *);
+static void init_conf_vars (const char *, const struct conf *);
+static void init_conf_boolean (const char *, bool *, const char *, bool *);
 static void init_opts_vars (void);
 static void print_hint (void);
 static void print_help (void);
@@ -338,8 +348,8 @@ static void save_char (char, char **, size_t *, size_t *);
 static void find_color_entries (struct color_name **, const struct color **);
 static void find_color_entry (const struct color_name *, unsigned int, const struct color **);
 static void print_line (const char *, const struct color **, const char * const, unsigned int, bool);
-static unsigned int get_rainbow_index (const struct color **, unsigned int, unsigned int);
-static bool skipable_rainbow_index (const struct color **, unsigned int);
+static unsigned int get_rainbow_index (const struct color **, unsigned int, unsigned int, unsigned int);
+static bool skipable_rainbow_index (const struct color **, unsigned int, unsigned int);
 static void print_clean (const char *);
 static bool is_esc (const char *);
 static const char *get_end_of_esc (const char *);
@@ -387,7 +397,7 @@ main (int argc, char **argv)
     const char *file = NULL;
 
     char *conf_file = NULL;
-    struct conf config = { NULL, NULL, NULL, NULL, NULL };
+    struct conf config = { NULL, NULL, NULL, NULL, NULL, NULL };
 
     program_name = argv[0];
     atexit (cleanup);
@@ -434,12 +444,13 @@ main (int argc, char **argv)
     if (access (conf_file, F_OK) != -1)
       parse_conf (conf_file, &config);
 #endif
+    init_conf_vars (conf_file, &config);
+
+    init_opts_vars ();
+
 #if !defined(CONF_FILE_TEST) && !defined(TEST)
     RELEASE (conf_file);
 #endif
-    init_conf_vars (&config);
-
-    init_opts_vars ();
 
     arg_cnt = argc - optind;
 
@@ -459,6 +470,7 @@ main (int argc, char **argv)
               { "exclude-random",   OPT_EXCLUDE_RANDOM_SET   },
               { "omit-color-empty", OPT_OMIT_COLOR_EMPTY_SET },
               { "rainbow-fg",       OPT_RAINBOW_FG_SET       },
+              { "rainbow-bg",       OPT_RAINBOW_BG_SET       },
           };
           for (i = 0; i < COUNT_OF (options, struct option_set); i++)
             if (opts_set & options[i].set)
@@ -467,6 +479,12 @@ main (int argc, char **argv)
       }
     else
       {
+        if (rainbow_fg && rainbow_bg)
+          vfprintf_fail ("%s and %s are mutually exclusive",
+            !rainbow_from_conf.fg ? "--rainbow-fg switch" : "rainbow-fg conf option",
+            !rainbow_from_conf.bg ? "--rainbow-bg switch" : "rainbow-bg conf option"
+          );
+
         if (arg_cnt == 0 || arg_cnt > 2)
           {
             vfprintf_diag ("%u arguments provided, expected 1-2 arguments or --clean[-all]", arg_cnt);
@@ -561,6 +579,9 @@ process_opts (int argc, char **argv, char **conf_file)
                     break;
                   case OPT_RAINBOW_FG:
                     opts_set |= OPT_RAINBOW_FG_SET;
+                    break;
+                  case OPT_RAINBOW_BG:
+                    opts_set |= OPT_RAINBOW_BG_SET;
                     break;
                   case OPT_HELP:
                     PRINT_HELP_EXIT ();
@@ -715,6 +736,8 @@ init_opts_vars (void)
       omit_color_empty = true;
     if (opts_set & OPT_RAINBOW_FG_SET)
       rainbow_fg = true;
+    if (opts_set & OPT_RAINBOW_BG_SET)
+      rainbow_bg = true;
 
     RELEASE (opts_arg.attr);
     RELEASE (opts_arg.exclude_random);
@@ -823,25 +846,38 @@ assign_conf (const char *conf_file, struct conf *config, const char *cfg, char *
       ASSIGN_CONF (config->omit_color_empty, val);
     else if (streq (cfg, "rainbow-fg"))
       ASSIGN_CONF (config->rainbow_fg, val);
+    else if (streq (cfg, "rainbow-bg"))
+      ASSIGN_CONF (config->rainbow_bg, val);
     else
       vfprintf_fail (formats[FMT_CONF], conf_file, cfg, "not recognized");
 }
 
 static void
-init_conf_vars (const struct conf *config)
+init_conf_vars (const char *conf_file, const struct conf *config)
 {
+    bool dummy;
+
     if (config->attr)
       process_opt_attr (config->attr, false);
     if (config->exclude_random)
       process_opt_exclude_random (config->exclude_random, false);
     if (config->omit_color_empty)
-      init_conf_boolean (config->omit_color_empty, &omit_color_empty, "omit-color-empty");
-    if (config->rainbow_fg)
-      init_conf_boolean (config->rainbow_fg, &rainbow_fg, "rainbow-fg");
+      init_conf_boolean (config->omit_color_empty, &omit_color_empty, "omit-color-empty", &dummy);
+
+    if (config->rainbow_fg || config->rainbow_bg)
+      {
+        if (config->rainbow_fg && config->rainbow_bg)
+          vfprintf_fail (formats[FMT_CONF_FILE], conf_file, "rainbow-fg and rainbow-bg option are mutually exclusive");
+
+        if (config->rainbow_fg)
+          init_conf_boolean (config->rainbow_fg, &rainbow_fg, "rainbow-fg", &rainbow_from_conf.fg);
+        else if (config->rainbow_bg)
+          init_conf_boolean (config->rainbow_bg, &rainbow_bg, "rainbow-bg", &rainbow_from_conf.bg);
+      }
 }
 
 static void
-init_conf_boolean (const char *conf_var, bool *boolean_var, const char *name)
+init_conf_boolean (const char *conf_var, bool *boolean_var, const char *name, bool *seen_opt)
 {
     if (streq (conf_var, "yes"))
       *boolean_var = true;
@@ -849,6 +885,7 @@ init_conf_boolean (const char *conf_var, bool *boolean_var, const char *name)
       *boolean_var = false;
     else
       vfprintf_fail (formats[FMT_CONF_INIT], name, "conf option is not valid");
+    *seen_opt = true;
 }
 
 static void
@@ -1028,6 +1065,7 @@ free_conf (struct conf *config)
     RELEASE (config->exclude_random);
     RELEASE (config->omit_color_empty);
     RELEASE (config->rainbow_fg);
+    RELEASE (config->rainbow_bg);
 }
 
 static void
@@ -1101,8 +1139,12 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
           }
       }
 
-    /* --rainbow-fg */
-    if (rainbow_fg)
+    /* --rainbow-bg */
+    if (rainbow_bg && !color_names[BACKGROUND])
+      vfprintf_fail ("background color required with %s", !rainbow_from_conf.bg ? "--rainbow-bg switch" : "rainbow-bg conf option");
+
+    /* --rainbow{-fg,-bg} */
+    if (rainbow_fg || rainbow_bg)
       {
         unsigned int i;
         const unsigned int color_set[2] = { FOREGROUND, BACKGROUND };
@@ -1113,7 +1155,12 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
                 streq (color_names[color]->name, "none")
              || streq (color_names[color]->name, "default"))
             )
-              vfprintf_fail (formats[FMT_RAINBOW], tables[color].desc, color_names[color]->orig, "cannot be used with --rainbow-fg");
+              {
+                vfprintf_fail (formats[FMT_RAINBOW], tables[color].desc, color_names[color]->orig, "cannot be used with",
+                    rainbow_fg ? !rainbow_from_conf.fg ? "--rainbow-fg switch" : "rainbow-fg conf option"
+                               : !rainbow_from_conf.bg ? "--rainbow-bg switch" : "rainbow-bg conf option"
+                  );
+              }
           }
       }
 
@@ -1553,20 +1600,31 @@ print_line (const char *attr, const struct color **colors, const char *const lin
     /* skip for --omit-color-empty? */
     else if (emit_colors)
       {
-        /* --rainbow-fg */
-        if (rainbow_fg)
+        /* --rainbow{-fg,-bg} */
+        if (rainbow_fg || rainbow_bg)
           {
-            unsigned int index;
-            const unsigned int max_index = tables[FOREGROUND].count - 2; /* omit color default */
+            const unsigned int color_sets[2][2] = { { FOREGROUND, BACKGROUND }, { BACKGROUND, FOREGROUND } };
+            unsigned int color_iter, color_cmp, set;
+            unsigned int index, max_index;
+
+            if (rainbow_fg)
+              set = 0;
+            else if (rainbow_bg)
+              set = 1;
+
+            color_iter = color_sets[set][0];
+            color_cmp  = color_sets[set][1];
+
+            max_index = tables[color_iter].count - 2; /* omit color default */
 
             if (rainbow_index == 0)
-              rainbow_index = colors[FOREGROUND]->index; /* init */
+              rainbow_index = colors[color_iter]->index; /* init */
             else if (rainbow_index > max_index)
               rainbow_index = 1; /* black */
 
-            index = get_rainbow_index (colors, rainbow_index, max_index);
+            index = get_rainbow_index (colors, color_cmp, rainbow_index, max_index);
 
-            colors[FOREGROUND] = (struct color *)&tables[FOREGROUND].entries[index];
+            colors[color_iter] = (struct color *)&tables[color_iter].entries[index];
 
             rainbow_index = index + 1;
           }
@@ -1586,13 +1644,13 @@ print_line (const char *attr, const struct color **colors, const char *const lin
 }
 
 static unsigned int
-get_rainbow_index (const struct color **colors, unsigned int index, unsigned int max)
+get_rainbow_index (const struct color **colors, unsigned int color_cmp, unsigned int index, unsigned int max)
 {
-    if (skipable_rainbow_index (colors, index))
+    if (skipable_rainbow_index (colors, color_cmp, index))
       {
         if (index + 1 > max)
           {
-            if (skipable_rainbow_index (colors, 1))
+            if (skipable_rainbow_index (colors, color_cmp, 1))
               return 2;
             else
               return 1;
@@ -1605,9 +1663,11 @@ get_rainbow_index (const struct color **colors, unsigned int index, unsigned int
 }
 
 static bool
-skipable_rainbow_index (const struct color **colors, unsigned int index)
+skipable_rainbow_index (const struct color **colors, unsigned int color_cmp, unsigned int index)
 {
-    return (colors[BACKGROUND] && index == colors[BACKGROUND]->index);
+    if (color_cmp == BACKGROUND && !colors[color_cmp])
+      return false;
+    return (index == colors[color_cmp]->index);
 }
 
 static void

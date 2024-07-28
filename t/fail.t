@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 29;
+my $tests = 31;
 
 my $run_program_fail = sub
 {
@@ -65,10 +65,12 @@ SKIP: {
         [ 'random/default',             'cannot be combined with'                     ],
         [ 'none/random',                'cannot be combined with'                     ],
         [ 'default/random',             'cannot be combined with'                     ],
+        [ '--rainbow-fg --rainbow-bg',  'mutually exclusive'                          ],
+        [ 'green --rainbow-bg',         'background color required with'              ],
         [ 'white/none --rainbow-fg',    'cannot be used with --rainbow-fg'            ],
-        [ 'white/default --rainbow-fg', 'cannot be used with --rainbow-fg'            ],
+        [ 'white/default --rainbow-bg', 'cannot be used with --rainbow-bg'            ],
         [ 'none/white --rainbow-fg',    'cannot be used with --rainbow-fg'            ],
-        [ 'default/white --rainbow-fg', 'cannot be used with --rainbow-fg'            ],
+        [ 'default/white --rainbow-bg', 'cannot be used with --rainbow-bg'            ],
     );
     foreach my $set (@set) {
         ok($run_program_fail->($program, $set->[0], $set->[1]), $set->[1]);

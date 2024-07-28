@@ -12,7 +12,7 @@ use IPC::Open3 qw(open3);
 use Symbol qw(gensym);
 use Test::More;
 
-my $tests = 8;
+my $tests = 10;
 
 my $run_program_fail = sub
 {
@@ -39,14 +39,16 @@ SKIP: {
     my $infile = $write_to_tmpfile->('');
 
     my @set = (
-        [ 'attr=:',                  'attr conf option must be provided a string'                ],
-        [ 'attr=bold:underscore',    'attr conf option must have strings separated by ,'         ],
-        [ 'attr=b0ld',               'attr conf option attribute \'b0ld\' is not valid'          ],
-        [ 'attr=b0ld,underscore',    'attr conf option attribute \'b0ld\' is not valid'          ], # handle comma
-        [ 'attr=bold,bold',          'attr conf option has attribute \'bold\' twice or more'     ],
-        [ 'exclude-random=random',   'exclude-random conf option must be provided a plain color' ],
-        [ 'omit-color-empty=unsure', 'omit-color-empty conf option is not valid'                 ],
-        [ 'rainbow-fg=unsure',       'rainbow-fg conf option is not valid'                       ],
+        [ 'attr=:',                         'attr conf option must be provided a string'                ],
+        [ 'attr=bold:underscore',           'attr conf option must have strings separated by ,'         ],
+        [ 'attr=b0ld',                      'attr conf option attribute \'b0ld\' is not valid'          ],
+        [ 'attr=b0ld,underscore',           'attr conf option attribute \'b0ld\' is not valid'          ], # handle comma
+        [ 'attr=bold,bold',                 'attr conf option has attribute \'bold\' twice or more'     ],
+        [ 'exclude-random=random',          'exclude-random conf option must be provided a plain color' ],
+        [ 'omit-color-empty=unsure',        'omit-color-empty conf option is not valid'                 ],
+        [ 'rainbow-fg=unsure',              'rainbow-fg conf option is not valid'                       ],
+        [ 'rainbow-bg=unsure',              'rainbow-bg conf option is not valid'                       ],
+        [ "rainbow-fg=yes\nrainbow-bg=no",  'mutually exclusive'                                        ],
     );
     foreach my $set (@set) {
         open(my $fh, '>', $conf_file) or die "Cannot open `$conf_file' for writing: $!\n";

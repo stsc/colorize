@@ -13,7 +13,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 34;
+my $tests = 36;
 
 my $valgrind_cmd = '';
 {
@@ -101,7 +101,7 @@ SKIP: {
 
         {
             my $ok = true;
-            foreach my $option (qw(--attr=bold --exclude-random=black --omit-color-empty --rainbow-fg)) {
+            foreach my $option (qw(--attr=bold --exclude-random=black --omit-color-empty --rainbow-fg --rainbow-bg)) {
                 $ok &= qx($valgrind_cmd$program $option $switch $infile1 2>&1 >/dev/null) =~ /switch has no meaning with/;
             }
             ok($ok, "$type strict options");
@@ -170,6 +170,14 @@ SKIP: {
         is_deeply([split /\n/, qx($valgrind_cmd$program white --rainbow-fg $infile)],
                   [split /\n/, "\e[37mfoo\e[0m\n\e[30mbar\e[0m\n\e[31mbaz\e[0m"],
                   'switch rainbow-fg (reset)');
+
+        is_deeply([split /\n/, qx($valgrind_cmd$program black/black --rainbow-bg $infile)],
+                  [split /\n/, "\e[41m\e[30mfoo\e[0m\n\e[42m\e[30mbar\e[0m\n\e[43m\e[30mbaz\e[0m"],
+                  'switch rainbow-bg (init)');
+
+        is_deeply([split /\n/, qx($valgrind_cmd$program green/white --rainbow-bg $infile)],
+                  [split /\n/, "\e[47m\e[32mfoo\e[0m\n\e[40m\e[32mbar\e[0m\n\e[41m\e[32mbaz\e[0m"],
+                  'switch rainbow-bg (reset)');
     }
 
     SKIP: {
