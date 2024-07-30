@@ -855,14 +855,12 @@ assign_conf (const char *conf_file, struct conf *config, const char *cfg, char *
 static void
 init_conf_vars (const char *conf_file, const struct conf *config)
 {
-    bool dummy;
-
     if (config->attr)
       process_opt_attr (config->attr, false);
     if (config->exclude_random)
       process_opt_exclude_random (config->exclude_random, false);
     if (config->omit_color_empty)
-      init_conf_boolean (config->omit_color_empty, &omit_color_empty, "omit-color-empty", &dummy);
+      init_conf_boolean (config->omit_color_empty, &omit_color_empty, "omit-color-empty", NULL);
 
     if (config->rainbow_fg || config->rainbow_bg)
       {
@@ -885,7 +883,9 @@ init_conf_boolean (const char *conf_var, bool *boolean_var, const char *name, bo
       *boolean_var = false;
     else
       vfprintf_fail (formats[FMT_CONF_INIT], name, "conf option is not valid");
-    *seen_opt = true;
+
+    if (seen_opt)
+      *seen_opt = true;
 }
 
 static void
@@ -1154,8 +1154,7 @@ process_args (unsigned int arg_cnt, char **arg_strings, char *attr, const struct
             if (color_names[color] && (
                 streq (color_names[color]->name, "none")
              || streq (color_names[color]->name, "default"))
-            )
-              {
+            ) {
                 vfprintf_fail (formats[FMT_RAINBOW], tables[color].desc, color_names[color]->orig, "cannot be used with",
                     rainbow_fg ? !rainbow_from_conf.fg ? "--rainbow-fg switch" : "rainbow-fg conf option"
                                : !rainbow_from_conf.bg ? "--rainbow-bg switch" : "rainbow-bg conf option"
