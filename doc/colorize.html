@@ -34,6 +34,8 @@ Usage: ./colorize (foreground) OR (foreground)/(background) OR --clean[-all] [-|
 		-c, --config=PATH
 		    --exclude-random=COLOR
 		    --omit-color-empty
+		    --rainbow-fg
+		    --rainbow-bg
 		-h, --help
 		-V, --version
 </pre>
@@ -102,8 +104,18 @@ permitted by applicable law.
 <span style="color:lime;">The programs included with the Debian GNU/Linux system are free software;</span>
 </pre>
 <pre>
+<span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --rainbow-fg White/black /etc/motd
+<span style="background-color:black;"></span><span style="font-weight:bold;color:gray;background-color:black;"></span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:red;background-color:black;">The programs included with the Debian GNU/Linux system are free software;</span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:green;background-color:black;">the exact distribution terms for each program are described in the</span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:olive;background-color:black;">individual files in /usr/share/doc/*/copyright.</span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:blue;background-color:black;"></span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:purple;background-color:black;">Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent</span>
+<span style="background-color:black;"></span><span style="font-weight:bold;color:teal;background-color:black;">permitted by applicable law.</span>
+</pre>
+<pre>
 <span style="color:yellow;font-weight:bold;">[sts@apollo ~/colorize]$</span> ./colorize --version
-colorize v0.64-17-ga3c5c67 (compiled at Sep 10 2019, 21:32:03)
+colorize v0.66-4-gdb8be3e (compiled at Aug  2 2024, 16:07:13)
 Compiler flags: &quot;-ansi -pedantic &quot;
 Linker flags: &quot;&quot;
 Preprocessor flags: &quot;&quot;
