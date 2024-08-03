@@ -74,6 +74,7 @@
 
 #define LF 0x01
 #define CR 0x02
+#define PARTIAL 0x04
 
 #define COUNT_OF(obj, type) (sizeof (obj) / sizeof (type))
 
@@ -1376,13 +1377,15 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
         if (feof (stream))
           {
             if (*line != '\0')
-              print_line (attr, colors, line, 0, true);
+              print_line (attr, colors, line, PARTIAL, true);
           }
         else if (*line != '\0')
           {
             char *p;
             if ((clean || clean_all) && (p = strrchr (line, '\033')))
               merge_print_line (line, p, stream);
+            else if (rainbow_fg || rainbow_bg)
+              print_line (attr, colors, line, PARTIAL, true);
             else
               print_line (attr, colors, line, 0, true);
           }
@@ -1625,7 +1628,8 @@ print_line (const char *attr, const struct color **colors, const char *const lin
 
             colors[color_iter] = (struct color *)&tables[color_iter].entries[index];
 
-            rainbow_index = index + 1;
+            if (!(flags & PARTIAL))
+              rainbow_index = index + 1;
           }
 
         /* Foreground color code is guaranteed to be set when background color code is present.  */

@@ -13,7 +13,7 @@ use Getopt::Long qw(:config no_auto_abbrev no_ignore_case);
 use Test::Harness qw(runtests);
 use Test::More;
 
-my $tests = 36;
+my $tests = 38;
 
 my $valgrind_cmd = '';
 {
@@ -134,6 +134,23 @@ SKIP: {
     my $infile2  = $write_to_tmpfile->($repeated);
 
     is_deeply([split /\n/, qx(cat $infile2 | $valgrind_cmd$program none/none)], [split /\n/, $repeated], "read ${\length $repeated} bytes (BUF_SIZE=$BUF_SIZE{normal})");
+
+    SKIP: {
+        my $program_buf = tmpnam();
+        skip 'compiling failed (short buffer)', 2 unless system("$compiler -DTEST -DBUF_SIZE=$BUF_SIZE{short} -o $program_buf $source") == 0;
+
+        my $short_text = 'foo bar baz' x 2;
+
+        is(qx(printf %s "$short_text" | $valgrind_cmd$program_buf blue --rainbow-fg),
+          "\e[34mfoo bar ba\e[0m\e[34mzfoo bar b\e[0m\e[34maz\e[0m",
+          "partial line (BUF_SIZE=$BUF_SIZE{short}, rainbow-fg)");
+
+        is(qx(printf %s "$short_text" | $valgrind_cmd$program_buf blue/black --rainbow-bg),
+          "\e[40m\e[34mfoo bar ba\e[0m\e[40m\e[34mzfoo bar b\e[0m\e[40m\e[34maz\e[0m",
+          "partial line (BUF_SIZE=$BUF_SIZE{short}, rainbow-bg)");
+
+        unlink $program_buf;
+    }
 
     {
         my $colored_text = qx(printf '%s\n' "foo bar baz" | $valgrind_cmd$program red);
