@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <pwd.h>
 #include <stdarg.h>
@@ -402,6 +403,12 @@ main (int argc, char **argv)
 
     program_name = argv[0];
     atexit (cleanup);
+
+    if (fcntl (STDIN_FILENO, F_SETFL, fcntl (STDIN_FILENO, F_GETFL) | O_NONBLOCK) == -1)
+      {
+        perror ("fcntl");
+        exit (EXIT_FAILURE);
+      }
 
     setvbuf (stdout, NULL, _IOLBF, 0);
 
@@ -1348,9 +1355,16 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
         size_t bytes_read;
         char *eol;
         const char *line;
+        bool sleep = false;
+        errno = 0;
         bytes_read = fread (buf, 1, BUF_SIZE, stream);
-        if (bytes_read != BUF_SIZE && ferror (stream))
-          vfprintf_fail (formats[FMT_ERROR], BUF_SIZE, "read");
+        if (bytes_read != BUF_SIZE)
+          {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+              sleep = true;
+            else if (fileno (stream) != STDIN_FILENO && ferror (stream))
+              vfprintf_fail (formats[FMT_ERROR], BUF_SIZE, "read");
+          }
         buf[bytes_read] = '\0';
         line = buf;
         while ((eol = strpbrk (line, "\n\r")))
@@ -1388,6 +1402,24 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
               print_line (attr, colors, line, PARTIAL, true);
             else
               print_line (attr, colors, line, 0, true);
+          }
+        if (sleep)
+          {
+            /* This entire construct is a bit of a hack...
+               I don't see /currently/ how it could be properly converted
+               to using open() and friends with {poll,select}().
+
+               It has been tested on older hardware to assert that the
+               performance loss should only be minimal...
+
+               -stsc / 2024-11-03
+            */
+            const struct timespec ts = { 0, 50000000L }; /* pause 50ms */
+            if (nanosleep (&ts, NULL) == -1)
+              {
+                perror ("nanosleep");
+                exit (EXIT_FAILURE);
+              }
           }
       }
 }
