@@ -1357,12 +1357,13 @@ read_print_stream (const char *attr, const struct color **colors, const char *fi
         const char *line;
         bool sleep = false;
         errno = 0;
+        clearerr (stream);
         bytes_read = fread (buf, 1, BUF_SIZE, stream);
         if (bytes_read != BUF_SIZE)
           {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
               sleep = true;
-            else if (fileno (stream) != STDIN_FILENO && ferror (stream))
+            else if (ferror (stream))
               vfprintf_fail (formats[FMT_ERROR], BUF_SIZE, "read");
           }
         buf[bytes_read] = '\0';
@@ -2042,9 +2043,24 @@ static FILE *
 open_file (const char *file, const char *mode)
 {
     FILE *stream;
+    int fd, flags = O_NONBLOCK;
+    mode_t perms = 0;
+
+    if (streq (mode, "r"))
+      flags |= O_RDONLY;
+    else if (streq (mode, "w"))
+      {
+        flags |= O_WRONLY | O_CREAT | O_TRUNC;
+        perms = 0644;
+      }
 
     errno = 0;
-    stream = fopen (file, mode);
+    fd = open (file, flags, perms);
+    if (fd == -1)
+      vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
+
+    errno = 0;
+    stream = fdopen (fd, mode);
     if (!stream)
       vfprintf_fail (formats[FMT_FILE], file, strerror (errno));
 
