@@ -1,8 +1,9 @@
 colorize (0.66-2) UNRELEASED; urgency=medium
 
+  * debian/watch: increase version, update link to HTTPS.
   * debian/{control,copyright}: update links to HTTPS, reported by duck(1).
 
- -- Steven Schubiger <stsc@refcnt.org>  Mon, 09 Feb 2026 15:47:24 +0100
+ -- Steven Schubiger <stsc@refcnt.org>  Mon, 09 Feb 2026 16:19:11 +0100
 
 colorize (0.66-1) unstable; urgency=low
 
