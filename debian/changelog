@@ -1,10 +1,11 @@
 colorize (0.66-2) UNRELEASED; urgency=medium
 
+  * Declare compliance with Debian Policy 4.7.3.
   * debian/copyright: amend year.
   * debian/watch: increase version, update link to HTTPS.
   * debian/{control,copyright}: update links to HTTPS, reported by duck(1).
 
- -- Steven Schubiger <stsc@refcnt.org>  Mon, 09 Feb 2026 16:38:16 +0100
+ -- Steven Schubiger <stsc@refcnt.org>  Mon, 09 Feb 2026 16:59:55 +0100
 
 colorize (0.66-1) unstable; urgency=low
 
