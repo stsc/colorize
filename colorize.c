@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
+#include <glob.h>
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -37,7 +38,6 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include <wordexp.h>
 
 #ifndef DEBUG
 # define DEBUG 0
@@ -203,7 +203,8 @@ enum {
     FMT_CONF,
     FMT_CONF_FILE,
     FMT_CONF_INIT,
-    FMT_RAINBOW
+    FMT_RAINBOW,
+    FMT_GLOB
 };
 static const char *formats[] = {
     "%s",                     /* generic   */
@@ -217,7 +218,8 @@ static const char *formats[] = {
     "%s: option '%s' %s",     /* conf      */
     "config file %s: %s",     /* conf file */
     "%s %s",                  /* conf init */
-    "%s color '%s' %s %s"     /* rainbow   */
+    "%s color '%s' %s %s",    /* rainbow   */
+    "glob string: %s"         /* glob      */
 };
 
 enum { GENERIC, FOREGROUND = 0, BACKGROUND };
@@ -375,7 +377,7 @@ static void *realloc_wrap_debug (void *, size_t, const char *, unsigned int);
 static void free_wrap (void **);
 static char *strdup_wrap (const char *, const char *, unsigned int);
 static char *str_concat_wrap (const char *, const char *, const char *, unsigned int);
-static char *expand_string (const char *);
+static char *glob_string (const char *);
 static bool get_bytes_size (unsigned long, struct bytes_size *);
 static char *get_file_type (mode_t);
 static bool has_color_name (const char *, const char *);
@@ -430,7 +432,7 @@ main (int argc, char **argv)
     else
       {
         char *s;
-        if ((s = expand_string (conf_file)))
+        if ((s = glob_string (conf_file)))
           {
             free (conf_file);
             conf_file = s;
@@ -1936,16 +1938,35 @@ str_concat_wrap (const char *str1, const char *str2, const char *file, unsigned 
     return str;
 }
 
+/* This code is largely untested.  */
 static char *
-expand_string (const char *str)
+glob_string (const char *str)
 {
     char *s = NULL;
-    wordexp_t p;
+    glob_t g;
+    int r;
 
-    wordexp (str, &p, 0);
-    if (p.we_wordc >= 1)
-      s = xstrdup (p.we_wordv[0]);
-    wordfree (&p);
+    r = glob (str, GLOB_ERR | GLOB_TILDE | GLOB_BRACE, NULL, &g);
+
+    switch (r)
+      {
+        case 0: /* matches */
+          if (g.gl_pathc >= 1)
+            s = xstrdup (g.gl_pathv[0]);
+          globfree (&g);
+          break;
+        case GLOB_NOMATCH:
+          break;
+        case GLOB_NOSPACE:
+          vfprintf_fail (formats[FMT_GLOB], "out of memory");
+          break;
+        case GLOB_ABORTED:
+          vfprintf_fail (formats[FMT_GLOB], "read error");
+          break;
+        default:
+          vfprintf_fail (formats[FMT_GLOB], "unknown error");
+          break;
+      }
 
     return s;
 }

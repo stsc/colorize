@@ -1,1 +1,0 @@
-- fix broken OpenBSD build (wordexp.h missing)
