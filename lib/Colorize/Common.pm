@@ -22,7 +22,7 @@ our ($source, $compiler, $compiler_flags, %BUF_SIZE, $valgrind_command, $write_t
 
 $source = 'colorize.c';
 $compiler = 'gcc';
-$compiler_flags = '-ansi -pedantic -Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-unused-function -Wno-unused-parameter';
+$compiler_flags = '-ansi -pedantic -Wall -Wextra -Wformat -Wswitch-default -Wuninitialized -Wunused -Wno-sometimes-uninitialized -Wno-unused-function -Wno-unused-parameter';
 %BUF_SIZE = (
     normal => 1024,
     short  => 10,
